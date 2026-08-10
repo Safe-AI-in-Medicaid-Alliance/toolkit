@@ -1,0 +1,2205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAMA Continuous Provider Risk Monitoring Readiness Guide</title>
+    <style>
+        :root {
+            --primary: #1a365d;
+            --primary-light: #2c5282;
+            --accent: #2b6cb0;
+            --success: #276749;
+            --warning: #c05621;
+            --danger: #c53030;
+            --bg: #f7fafc;
+            --card-bg: #ffffff;
+            --border: #e2e8f0;
+            --text: #2d3748;
+            --text-light: #718096;
+            --phase1: #2b6cb0;
+            --phase2: #2f855a;
+            --phase3: #c05621;
+            --phase4: #6b46c1;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            padding: 2.5rem 2rem;
+            text-align: center;
+        }
+        .header h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+        .header p { opacity: 0.9; font-size: 1.05rem; max-width: 800px; margin: 0.3rem auto; }
+        .header .badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-top: 0.75rem;
+        }
+        .main-layout {
+            display: flex;
+            min-height: calc(100vh - 120px);
+        }
+        .nav-bar {
+            background: white;
+            border-right: 1px solid var(--border);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 100;
+            box-shadow: 2px 0 4px rgba(0,0,0,0.05);
+            min-width: 220px;
+            max-width: 220px;
+            flex-shrink: 0;
+        }
+        .nav-bar ul {
+            display: flex;
+            flex-direction: column;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        .nav-bar li a {
+            display: block;
+            padding: 0.6rem 1.25rem;
+            text-decoration: none;
+            color: var(--text-light);
+            font-size: 0.82rem;
+            font-weight: 500;
+            white-space: nowrap;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        .nav-bar li a:hover, .nav-bar li a.active {
+            color: var(--primary);
+            background: #ebf8ff;
+            border-left-color: var(--accent);
+        }
+        .nav-bar li.has-sub > a {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .nav-bar li.has-sub > a .nav-arrow {
+            font-size: 0.6rem;
+            transition: transform 0.2s;
+            margin-left: 0.4rem;
+        }
+        .nav-bar li.has-sub.expanded > a .nav-arrow {
+            transform: rotate(90deg);
+        }
+        .nav-bar .sub-nav {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .nav-bar li.has-sub.expanded .sub-nav {
+            max-height: 500px;
+        }
+        .nav-bar .sub-nav li a {
+            padding: 0.4rem 1.25rem 0.4rem 2.25rem;
+            font-size: 0.76rem;
+            color: var(--text-light);
+            border-left: 3px solid transparent;
+        }
+        .nav-bar .sub-nav li a:hover, .nav-bar .sub-nav li a.active {
+            color: var(--accent);
+            background: #f0f7ff;
+            border-left-color: var(--border);
+        }
+        .container { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; flex: 1; }
+        .section { display: none; animation: fadeIn 0.3s ease; }
+        .section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.25rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .card h3 { color: var(--primary); margin-bottom: 0.75rem; font-size: 1.1rem; }
+        .card p { color: var(--text); margin-bottom: 0.5rem; }
+        .phase-badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+        .phase-badge.p1 { background: var(--phase1); }
+        .phase-badge.p2 { background: var(--phase2); }
+        .phase-badge.p3 { background: var(--phase3); }
+        .phase-badge.p4 { background: var(--phase4); }
+        .timeline { position: relative; padding-left: 2rem; margin: 1.5rem 0; }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--border);
+            border-radius: 2px;
+        }
+        .timeline-item { position: relative; margin-bottom: 1.5rem; padding-left: 1rem; }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -1.65rem;
+            top: 0.5rem;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 3px solid var(--accent);
+            background: white;
+        }
+        .checklist { list-style: none; padding: 0; }
+        .checklist li {
+            padding: 0.6rem 0.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: flex-start;
+            gap: 0.6rem;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .checklist li:hover { background: #f0f4f8; }
+        .checklist li:last-child { border-bottom: none; }
+        .checklist li input[type="checkbox"] {
+            margin-top: 0.2rem;
+            width: 18px;
+            height: 18px;
+            accent-color: var(--success);
+            flex-shrink: 0;
+        }
+        .checklist li.checked span { text-decoration: line-through; color: var(--text-light); }
+        .progress-bar {
+            background: #e2e8f0;
+            border-radius: 8px;
+            height: 8px;
+            overflow: hidden;
+            margin: 0.5rem 0;
+        }
+        .progress-bar .fill {
+            height: 100%;
+            border-radius: 8px;
+            transition: width 0.4s ease;
+            background: var(--success);
+        }
+        .progress-text { font-size: 0.8rem; color: var(--text-light); margin-bottom: 0.25rem; }
+        .governance-rule {
+            border-left: 4px solid var(--accent);
+            padding: 1rem 1.25rem;
+            margin-bottom: 1rem;
+            background: #ebf4ff;
+            border-radius: 0 8px 8px 0;
+        }
+        .governance-rule h4 { color: var(--primary); margin-bottom: 0.4rem; font-size: 0.95rem; }
+        .governance-rule p { font-size: 0.9rem; color: var(--text); }
+        .governance-rule .priority-tag {
+            display: inline-block;
+            font-size: 0.7rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 3px;
+            font-weight: 600;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+        .governance-rule .priority-tag.required { background: #c53030; color: white; }
+        .governance-rule .priority-tag.build { background: #2f855a; color: white; }
+        .workflow-step {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            background: white;
+        }
+        .workflow-step .step-num {
+            width: 36px;
+            height: 36px;
+            background: var(--accent);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+        .workflow-step .step-content h4 { font-size: 0.95rem; margin-bottom: 0.25rem; }
+        .workflow-step .step-content p { font-size: 0.85rem; color: var(--text-light); }
+        .tab-group { margin-bottom: 1.5rem; }
+        .tab-buttons { display: flex; gap: 0.25rem; border-bottom: 2px solid var(--border); margin-bottom: 1rem; flex-wrap: wrap; }
+        .tab-btn {
+            padding: 0.6rem 1rem;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-light);
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+        }
+        .tab-btn:hover { color: var(--primary); }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--accent); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .table-wrapper { overflow-x: auto; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            margin: 1rem 0;
+        }
+        table th, table td {
+            padding: 0.7rem 0.8rem;
+            border: 1px solid var(--border);
+            text-align: left;
+            vertical-align: top;
+        }
+        table th { background: #edf2f7; font-weight: 600; color: var(--primary); }
+        table tr:hover td { background: #f7fafc; }
+        .callout {
+            padding: 1rem 1.25rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+        .callout.info { background: #ebf8ff; border-left: 4px solid #3182ce; }
+        .callout.warning { background: #fffaf0; border-left: 4px solid #dd6b20; }
+        .callout.success { background: #f0fff4; border-left: 4px solid #38a169; }
+        .callout.new { background: #faf5ff; border-left: 4px solid #6b46c1; }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        .summary-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.25rem;
+            text-align: center;
+            border-top: 4px solid var(--accent);
+        }
+        .summary-card h4 { color: var(--primary); margin-bottom: 0.5rem; }
+        .summary-card .number { font-size: 2rem; font-weight: 700; color: var(--accent); }
+        .accordion { margin-bottom: 0.5rem; }
+        .accordion-header {
+            padding: 0.85rem 1rem;
+            background: #edf2f7;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+        }
+        .accordion-header:hover { background: #e2e8f0; }
+        .accordion-header .arrow { transition: transform 0.2s; }
+        .accordion-header.open .arrow { transform: rotate(180deg); }
+        .accordion-header.open { border-radius: 6px 6px 0 0; }
+        .accordion-body {
+            display: none;
+            padding: 1rem;
+            border: 1px solid var(--border);
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+            background: white;
+        }
+        .accordion-body.open { display: block; }
+        .use-case-card {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            background: white;
+            border-left: 4px solid var(--phase2);
+        }
+        .use-case-card h4 { color: var(--primary); margin-bottom: 0.75rem; }
+        .use-case-card .uc-row { display: flex; gap: 1rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
+        .use-case-card .uc-col { flex: 1; min-width: 200px; }
+        .use-case-card .uc-col h5 { font-size: 0.8rem; color: var(--text-light); text-transform: uppercase; margin-bottom: 0.3rem; }
+        .use-case-card .uc-col p { font-size: 0.85rem; }
+        .new-badge {
+            display: inline-block;
+            background: #6b46c1;
+            color: white;
+            font-size: 0.65rem;
+            padding: 0.1rem 0.4rem;
+            border-radius: 3px;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+            font-weight: 600;
+        }
+        .tier-badge {
+            display: inline-block;
+            font-size: 0.7rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 3px;
+            font-weight: 600;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+        .tier-badge.conventional { background: #bee3f8; color: #2a4365; }
+        .tier-badge.ml { background: #fefcbf; color: #744210; }
+        .tier-badge.genai { background: #fed7e2; color: #702459; }
+        .risk-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .risk-row:last-child { border-bottom: none; }
+        .risk-row.risk-header { font-weight: 600; background: #edf2f7; border-radius: 6px 6px 0 0; }
+        .start-here-card {
+            background: linear-gradient(135deg, #ebf8ff 0%, #f0fff4 100%);
+            border: 2px solid var(--accent);
+            border-radius: 12px;
+            padding: 1.75rem;
+            margin-bottom: 1.5rem;
+        }
+        .start-here-card h3 { color: var(--primary); margin-bottom: 1rem; font-size: 1.2rem; }
+        .start-path {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .start-path:hover { border-color: var(--accent); transform: translateX(4px); }
+        .start-path .path-icon { font-size: 1.5rem; flex-shrink: 0; }
+        .start-path .path-text strong { display: block; font-size: 0.9rem; color: var(--primary); }
+        .start-path .path-text span { font-size: 0.8rem; color: var(--text-light); }
+        /* Feedback Panel */
+        .feedback-toggle {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.25rem;
+            border-radius: 30px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 200;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .feedback-toggle:hover { background: var(--primary-light); transform: scale(1.05); }
+        .feedback-panel {
+            position: fixed;
+            top: 0;
+            right: -420px;
+            width: 400px;
+            height: 100vh;
+            background: white;
+            border-left: 2px solid var(--border);
+            box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+            z-index: 300;
+            transition: right 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .feedback-panel.open { right: 0; }
+        .feedback-panel-header {
+            padding: 1.25rem;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .feedback-panel-header h3 { font-size: 1rem; margin: 0; }
+        .feedback-panel-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0 0.5rem;
+        }
+        .feedback-panel-body { flex: 1; overflow-y: auto; padding: 1.25rem; }
+        .feedback-section { margin-bottom: 1.25rem; }
+        .feedback-section label { display: block; font-weight: 600; font-size: 0.85rem; color: var(--primary); margin-bottom: 0.4rem; }
+        .feedback-section textarea {
+            width: 100%;
+            min-height: 70px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.6rem;
+            font-size: 0.85rem;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.2s;
+        }
+        .feedback-section textarea:focus { outline: none; border-color: var(--accent); }
+        .feedback-name {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.6rem;
+            font-size: 0.85rem;
+            font-family: inherit;
+            margin-bottom: 1rem;
+        }
+        .feedback-name:focus { outline: none; border-color: var(--accent); }
+        .feedback-actions {
+            padding: 1rem 1.25rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .feedback-btn {
+            padding: 0.6rem 1rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .feedback-btn.primary { background: var(--accent); color: white; }
+        .feedback-btn.primary:hover { background: var(--primary); }
+        .feedback-btn.secondary { background: #edf2f7; color: var(--text); }
+        .feedback-btn.secondary:hover { background: #e2e8f0; }
+        .feedback-toast {
+            position: fixed;
+            bottom: 5rem;
+            right: 1.5rem;
+            background: var(--success);
+            color: white;
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            z-index: 400;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+        .feedback-toast.show { opacity: 1; transform: translateY(0); }
+        .feedback-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.3);
+            z-index: 250;
+            display: none;
+        }
+        .feedback-overlay.show { display: block; }
+        @media (max-width: 900px) {
+            .main-layout { flex-direction: column; }
+            .nav-bar {
+                position: relative;
+                height: auto;
+                max-width: 100%;
+                min-width: 100%;
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                overflow-y: visible;
+                overflow-x: auto;
+                padding: 0.5rem 0;
+            }
+            .nav-bar ul { flex-direction: row; flex-wrap: wrap; padding: 0 0.5rem; }
+            .nav-bar li a {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.78rem;
+                border-left: none;
+                border-bottom: 2px solid transparent;
+            }
+            .nav-bar li a:hover, .nav-bar li a.active {
+                border-left-color: transparent;
+                border-bottom-color: var(--accent);
+                background: transparent;
+            }
+            .nav-bar .sub-nav { display: none !important; }
+            .nav-bar li.has-sub > a .nav-arrow { display: none; }
+        }
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.4rem; }
+            .container { padding: 1.25rem 1rem; }
+            .workflow-step { flex-direction: column; gap: 0.5rem; }
+            .use-case-card .uc-row { flex-direction: column; }
+            .risk-row { grid-template-columns: 1fr; }
+            .feedback-panel { width: 100%; right: -100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>SAMA Continuous Provider Risk Monitoring Readiness Guide</h1>
+        <p>Leveraging AI and Advanced Analytics for Program Integrity, Rural Access, and Safe State Implementation</p>
+        <span class="badge">Draft v0.3 | SAMA Workstream | Updated August 2026</span>
+    </div>
+    <div class="main-layout">
+    <nav class="nav-bar">
+        <ul>
+            <li><a href="#" data-section="start" class="active">Start Here</a></li>
+            <li><a href="#" data-section="overview">Overview</a></li>
+            <li><a href="#" data-section="problem">The Problem</a></li>
+            <li class="has-sub">
+                <a href="#" data-section="usecases">Use Cases <span class="nav-arrow">&#9656;</span></a>
+                <ul class="sub-nav">
+                    <li><a href="#" data-section="usecases" data-scroll="uc1">1. Billing Anomaly</a></li>
+                    <li><a href="#" data-section="usecases" data-scroll="uc2">2. Ownership Graph</a></li>
+                    <li><a href="#" data-section="usecases" data-scroll="uc3">3. Document Triage</a></li>
+                    <li><a href="#" data-section="usecases" data-scroll="uc4">4. Cross-State</a></li>
+                    <li><a href="#" data-section="usecases" data-scroll="uc5">5. Enrollment Tiering</a></li>
+                    <li><a href="#" data-section="usecases" data-scroll="uc6">6. Rural Access</a></li>
+                </ul>
+            </li>
+            <li class="has-sub">
+                <a href="#" data-section="phases">4-Phase Model <span class="nav-arrow">&#9656;</span></a>
+                <ul class="sub-nav">
+                    <li><a href="#" data-section="phases" data-tab="phase1">Phase 1: Foundation</a></li>
+                    <li><a href="#" data-section="phases" data-tab="phase2">Phase 2: Pilots</a></li>
+                    <li><a href="#" data-section="phases" data-tab="phase3">Phase 3: Scale</a></li>
+                    <li><a href="#" data-section="phases" data-tab="phase4">Phase 4: Continuous Ops</a></li>
+                </ul>
+            </li>
+            <li><a href="#" data-section="workflow">Workflow</a></li>
+            <li class="has-sub">
+                <a href="#" data-section="governance">Governance <span class="nav-arrow">&#9656;</span></a>
+                <ul class="sub-nav">
+                    <li><a href="#" data-section="governance" data-scroll="gov-rules">12 Rules</a></li>
+                    <li><a href="#" data-section="governance" data-scroll="gov-disclosure">Provider Disclosure</a></li>
+                    <li><a href="#" data-section="governance" data-scroll="gov-charter">Board Charter</a></li>
+                </ul>
+            </li>
+            <li><a href="#" data-section="risks">Risk Framework</a></li>
+            <li class="has-sub">
+                <a href="#" data-section="data">Data &amp; Alerts <span class="nav-arrow">&#9656;</span></a>
+                <ul class="sub-nav">
+                    <li><a href="#" data-section="data" data-scroll="data-sources">Data Sources</a></li>
+                    <li><a href="#" data-section="data" data-scroll="data-alerts">Alert Approach</a></li>
+                    <li><a href="#" data-section="data" data-scroll="data-metrics">Performance Metrics</a></li>
+                </ul>
+            </li>
+            <li class="has-sub">
+                <a href="#" data-section="staffing">Staffing &amp; Training <span class="nav-arrow">&#9656;</span></a>
+                <ul class="sub-nav">
+                    <li><a href="#" data-section="staffing" data-scroll="staff-roles">Team Roles</a></li>
+                    <li><a href="#" data-section="staffing" data-scroll="staff-training">Training</a></li>
+                    <li><a href="#" data-section="staffing" data-scroll="staff-budget">Budget Worksheet</a></li>
+                    <li><a href="#" data-section="staffing" data-scroll="staff-funding">Funding Pathways</a></li>
+                </ul>
+            </li>
+            <li class="has-sub">
+                <a href="#" data-section="templates">Templates <span class="nav-arrow">&#9656;</span></a>
+                <ul class="sub-nav">
+                    <li><a href="#" data-section="templates" data-tab="tmpl-readiness">Readiness Assessment</a></li>
+                    <li><a href="#" data-section="templates" data-tab="tmpl-vendor">Vendor Questions</a></li>
+                    <li><a href="#" data-section="templates" data-tab="tmpl-modelcard">Model Card</a></li>
+                    <li><a href="#" data-section="templates" data-tab="tmpl-implsheet">Fact Sheet</a></li>
+                    <li><a href="#" data-section="templates" data-tab="tmpl-evidence">ALJ Evidence</a></li>
+                    <li><a href="#" data-section="templates" data-tab="tmpl-rural">Rural Access</a></li>
+                </ul>
+            </li>
+            <li><a href="#" data-section="casestudies">Case Studies</a></li>
+            <li><a href="#" data-section="talkingpoints">Talking Points</a></li>
+            <li><a href="#" data-section="glossary">Glossary</a></li>
+            <li><a href="#" data-section="survey">Survey Results</a></li>
+            <li><a href="#" data-section="changelog">Changelog</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <!-- START HERE SECTION (NEW in v0.3) -->
+        <div id="start" class="section active">
+            <h2 style="margin-bottom:1rem; color:var(--primary);">Start Here</h2>
+            <div class="start-here-card">
+                <h3>Where are you on the AI readiness spectrum?</h3>
+                <p style="margin-bottom:1.25rem; font-size:0.9rem;">This guide serves states at every stage. Find your starting point below and jump directly to the most relevant sections.</p>
+
+                <div class="start-path" onclick="navigateTo('overview')">
+                    <div class="path-icon">1&#xFE0F;&#x20E3;</div>
+                    <div class="path-text">
+                        <strong>Not exploring yet? Do these 3 things.</strong>
+                        <span>1. Read the Executive Summary. 2. Review the 6 Use Cases to see what's possible. 3. Complete the Readiness Self-Assessment (&#xa7;9.1) to identify gaps.</span>
+                    </div>
+                </div>
+
+                <div class="start-path" onclick="navigateTo('governance')">
+                    <div class="path-icon">2&#xFE0F;&#x20E3;</div>
+                    <div class="path-text">
+                        <strong>Building governance or developing policy?</strong>
+                        <span>Start with Governance Rules (&#xa7;5) &#x2014; focus on the 4 rules marked "Required before first pilot." Then review the Risk Framework (&#xa7;6) and Staffing needs (&#xa7;8).</span>
+                    </div>
+                </div>
+
+                <div class="start-path" onclick="navigateTo('templates')">
+                    <div class="path-icon">3&#xFE0F;&#x20E3;</div>
+                    <div class="path-text">
+                        <strong>Procuring or evaluating vendor solutions?</strong>
+                        <span>Jump to Vendor Questions (&#xa7;9.2), Model Card Rubric (&#xa7;9.3), and the Implementation Fact Sheet (&#xa7;9.4). Use the Funding Pathways section (&#xa7;8.4) for budget planning.</span>
+                    </div>
+                </div>
+
+                <div class="start-path" onclick="navigateTo('phases')">
+                    <div class="path-icon">4&#xFE0F;&#x20E3;</div>
+                    <div class="path-text">
+                        <strong>Already in pilot or production?</strong>
+                        <span>Focus on Phase 3&#x2013;4 activities, the Workflow (&#xa7;4), Performance Metrics with benchmarks (&#xa7;7.3), and Continuous Ops checklists. Review Case Studies for peer lessons.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>How to Use This Readiness Guide</h3>
+                <p>This guide is organized as a state-ready implementation resource. It can be used as:</p>
+                <ul style="margin:0.75rem 0 0 1.5rem;">
+                    <li>A writing base for the final SAMA deliverable</li>
+                    <li>A readiness checklist for state agencies at any maturity stage</li>
+                    <li>A source for a short MESC executive summary</li>
+                    <li>A framework to intake state-specific inputs and priorities</li>
+                    <li>A reference for procurement staff evaluating vendor AI claims</li>
+                </ul>
+            </div>
+
+            <div class="callout success">
+                <strong>Key Takeaway:</strong> The safest path is not to buy an AI product and search for a problem. The safest path is to define the Medicaid decision, govern the workflow, validate the data and model, train the humans, and scale only when outputs are useful, fair, explainable, and defensible.
+            </div>
+        </div>
+        <!-- OVERVIEW SECTION -->
+        <div id="overview" class="section">
+            <h2 style="margin-bottom:1rem; color:var(--primary);">Executive Summary</h2>
+            <div class="card">
+                <p>State Medicaid agencies face a practical problem: they are expected to protect public funds, detect fraud, waste, and abuse, support federal and state integrity priorities, and maintain access to care for eligible members — including rural and underserved communities — with finite staffing and uneven data quality.</p>
+                <p style="margin-top:0.75rem;">AI and advanced analytics can help states move from episodic review toward <strong>continuous provider risk monitoring</strong>. The value is not replacing investigators or Medicaid leadership. The value is using analytics to organize large volumes of claims, enrollment, documentation, ownership, access, and public-source information into higher-quality leads, clearer risk tiers, and more defensible evidence packages for human review.</p>
+            </div>
+
+            <div class="callout success">
+                <strong>What good looks like:</strong> A state with effective continuous monitoring generates fewer but higher-quality leads, resolves cases faster, documents decisions defensibly, avoids disrupting rural access, and can explain its process to any audience &#x2014; from legislators to ALJs to providers. The technology serves the mission; the mission does not serve the technology.
+            </div>
+
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <div class="number">4</div>
+                    <h4>Implementation Phases</h4>
+                    <p style="font-size:0.8rem;color:var(--text-light);">Foundation &rarr; Pilots &rarr; Scale &rarr; Continuous Ops</p>
+                </div>
+                <div class="summary-card">
+                    <div class="number">12</div>
+                    <h4>Governance Rules</h4>
+                    <p style="font-size:0.8rem;color:var(--text-light);">4 required before pilot; 8 built over first year</p>
+                </div>
+                <div class="summary-card">
+                    <div class="number">8</div>
+                    <h4>Workflow Steps</h4>
+                    <p style="font-size:0.8rem;color:var(--text-light);">Human-centered, auditable process</p>
+                </div>
+                <div class="summary-card">
+                    <div class="number">7+</div>
+                    <h4>Implementation Templates</h4>
+                    <p style="font-size:0.8rem;color:var(--text-light);">Ready-to-use checklists, model cards &amp; assessments</p>
+                </div>
+            </div>
+
+            <div class="callout info">
+                <strong>Central Premise:</strong> States should not ask, "Can AI find fraud?" in isolation. They should ask, "Can this specific AI-enabled workflow help us prioritize the right risks, protect legitimate providers and beneficiaries, document our reasoning, and withstand operational, legal, and equity review?"
+            </div>
+        </div>
+        <!-- THE PROBLEM SECTION -->
+        <div id="problem" class="section">
+            <h2 style="margin-bottom:1rem; color:var(--primary);">1. The Problem</h2>
+
+            <div class="accordion">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    1.1 Static provider oversight is no longer enough
+                    <span class="arrow">&#9660;</span>
+                </div>
+                <div class="accordion-body">
+                    <p>Provider enrollment, screening, and revalidation remain the front door for program integrity, but revalidation alone does not identify all fraud, waste, or abuse. A provider may pass every enrollment rule and still present risk because of the services billed, the entities connected to the provider, billing velocity, documentation patterns, referral networks, or sudden changes in service mix.</p>
+                    <p style="margin-top:0.75rem;">Continuous provider risk monitoring fills this gap by creating an ongoing cycle: <strong>collect signals &rarr; stratify risk &rarr; prioritize human review &rarr; document evidence &rarr; act proportionately &rarr; feed outcomes back</strong> into the monitoring system.</p>
+                </div>
+            </div>
+
+            <div class="accordion">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    1.2 Lead quality matters more than lead volume
+                    <span class="arrow">&#9660;</span>
+                </div>
+                <div class="accordion-body">
+                    <p>Many states do not lack leads. They lack staff capacity to pursue every lead, and they need better ways to select the leads most likely to produce a viable outcome. The goal is not to maximize flags. The goal is to generate fewer, better, more explainable, more defensible leads.</p>
+                    <ul style="margin:0.75rem 0 0 1.5rem;">
+                        <li>Some states must focus on cases with the greatest recovery potential; others may prioritize patient harm or network risk.</li>
+                        <li>Some states may be prohibited from using extrapolation and need tools to identify which claims deserve human attention.</li>
+                        <li>Some states are more focused on prevention and enrollment; others on post-payment investigations.</li>
+                        <li>All states need transparency about why a lead was generated and what evidence exists before taking action.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="accordion">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    1.3 Rural access and program integrity are connected
+                    <span class="arrow">&#9660;</span>
+                </div>
+                <div class="accordion-body">
+                    <p>Program integrity cannot be treated only as a recovery function. In rural areas, a single provider may be critical to maintaining access. A poorly calibrated risk program can unintentionally burden or drive out legitimate providers.</p>
+                    <p style="margin-top:0.75rem;">Continuous provider risk monitoring should include access guardrails. Before escalating adverse action, the workflow should ask:</p>
+                    <ul style="margin:0.75rem 0 0 1.5rem;">
+                        <li>What access gap would this action create?</li>
+                        <li>Are there alternative providers?</li>
+                        <li>Are members likely to experience travel, delay, or continuity-of-care disruption?</li>
+                        <li>Is the state dealing with fraud vs. a good-faith provider who needs education?</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="accordion">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    1.4 AI changes what states can see — and must govern
+                    <span class="arrow">&#9660;</span>
+                </div>
+                <div class="accordion-body">
+                    <p>AI can analyze information previously difficult to use at scale: multi-page clinical records, call recordings, consent artifacts, ownership networks, provider websites, service patterns, geospatial shifts, and longitudinal behavior. That expanded visibility can help identify hidden risk earlier — but also creates obligations: states must understand model purpose, data sources, limitations, bias risks, explainability, audit trail, and decision rights before relying on the output.</p>
+                </div>
+            </div>
+
+            <div class="accordion">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    1.5 Why this matters now
+                    <span class="arrow">&#9660;</span>
+                </div>
+                <div class="accordion-body">
+                    <p>States are under increasing pressure to improve program integrity without creating unnecessary burden for providers or barriers for members. Fraud schemes can move faster than traditional audits. Public data can be incomplete or misleading. Vendors are bringing AI products into Medicaid environments, and states need a practical way to ask the right questions, monitor performance, and ensure tools remain safe over time.</p>
+                    <div class="callout warning" style="margin-top:0.75rem;">
+                        <strong>Implementation Warning:</strong> An AI-generated risk score, without governance, workflow integration, evidence standards, and human review, is not a program integrity tool. It is an unmanaged liability.
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- USE CASES SECTION -->
+        <div id="usecases" class="section">
+            <h2 style="margin-bottom:1rem; color:var(--primary);">2. Use Cases: What Goes In, What Comes Out</h2>
+            <p style="margin-bottom:1rem;">Each use case below describes: the data going in, what AI does with it, what the expected output is, and where it fits in the workflow. Technology tier badges indicate the type of analytics involved &#x2014; governance requirements scale with tier complexity.</p>
+
+            <div class="callout info" style="margin-bottom:1.25rem;">
+                <strong>Technology Tier Key:</strong>
+                <span class="tier-badge conventional">Conventional Analytics</span> Statistical methods states have used for years &mdash;
+                <span class="tier-badge ml">Machine Learning</span> Pattern recognition requiring model governance &mdash;
+                <span class="tier-badge genai">Generative AI</span> LLM-based capabilities requiring additional safeguards (hallucination, training data controls)
+            </div>
+
+            <!-- Use Case Effort/Value Summary Table (NEW) -->
+            <div class="card">
+                <h3>Use Case Prioritization: Effort vs. Time-to-Value<span class="new-badge">NEW</span></h3>
+                <p style="margin-bottom:0.75rem;">Not all use cases require the same investment. Use this table to sequence implementation based on your state's data readiness and capacity.</p>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Use Case</th><th>Technology Tier</th><th>Data Readiness Required</th><th>Implementation Effort</th><th>Time to First Value</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>1. Billing Pattern Anomaly Detection</strong></td><td><span class="tier-badge conventional">Conventional</span> / <span class="tier-badge ml">ML</span></td><td>Medium &#x2014; requires clean claims data</td><td>Medium</td><td>4&#x2013;8 weeks</td></tr>
+                            <tr><td><strong>2. Ownership Graph Analysis</strong></td><td><span class="tier-badge ml">ML</span></td><td>High &#x2014; requires linked enrollment, corporate, NPI data</td><td>High</td><td>3&#x2013;6 months</td></tr>
+                            <tr><td><strong>3. Document Summarization &amp; Triage</strong></td><td><span class="tier-badge genai">Generative AI</span></td><td>Low &#x2014; works with existing document stores</td><td>Low&#x2013;Medium</td><td>2&#x2013;4 weeks</td></tr>
+                            <tr><td><strong>4. Cross-State Provider Visibility</strong></td><td><span class="tier-badge ml">ML</span></td><td>Medium &#x2014; CMS public data + state enrollment</td><td>Medium&#x2013;High</td><td>2&#x2013;4 months</td></tr>
+                            <tr><td><strong>5. Enrollment/Revalidation Risk Tiering</strong></td><td><span class="tier-badge conventional">Conventional</span> / <span class="tier-badge ml">ML</span></td><td>Medium &#x2014; enrollment + history data</td><td>Medium</td><td>6&#x2013;10 weeks</td></tr>
+                            <tr><td><strong>6. Rural Access Impact Overlay</strong></td><td><span class="tier-badge conventional">Conventional</span></td><td>Medium &#x2014; geospatial + provider directory data</td><td>Low&#x2013;Medium</td><td>4&#x2013;6 weeks</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p style="font-size:0.8rem; color:var(--text-light); margin-top:0.5rem;"><em>Fastest wins:</em> Document Summarization and Rural Access Overlay can deliver value quickly with lower data preparation requirements. Ownership Graph Analysis requires the most data plumbing and cross-source integration.</p>
+            </div>
+
+            <div class="use-case-card" id="uc1">
+                <h4>Use Case 1: Billing Pattern Anomaly Detection (Lead Generation) <span class="tier-badge conventional">Conventional Analytics</span> <span class="tier-badge ml">ML</span></h4>
+                <div class="uc-row">
+                    <div class="uc-col">
+                        <h5>Data Inputs</h5>
+                        <p>Paid claims data (procedure codes, dates, units, amounts), provider peer group benchmarks, historical billing patterns for same provider</p>
+                    </div>
+                    <div class="uc-col">
+                        <h5>What AI Does</h5>
+                        <p>Clustering and statistical outlier detection (techniques states have used for years, now enhanced with machine learning): identifies providers billing at volumes or patterns significantly different from peers in same taxonomy/geography.</p>
+                    </div>
+                </div>
+                <div class="uc-row">
+                    <div class="uc-col">
+                        <h5>Expected Output</h5>
+                        <p>Prioritized lead list with: provider ID, risk score, top 3 contributing factors (e.g., "billing 4x peer average for code X"), confidence level, and recommended next step (desk review, record request, etc.)</p>
+                    </div>
+                    <div class="uc-col">
+                        <h5>Workflow Impact</h5>
+                        <p>Feeds into Triage (Step 4). Investigators receive fewer but higher-quality leads with pre-assembled context instead of raw data dumps.</p>
+                    </div>
+                </div>
+                <div class="callout success" style="margin-top:0.5rem;">
+                    <strong>What good looks like:</strong> Investigators spend less time sorting through data and more time on substantive review. Lead-to-action conversion rates improve because leads arrive with context and evidence already assembled.
+                </div>
+            </div>
+
+            <div class="use-case-card" id="uc2">
+                <h4>Use Case 2: Provider Network / Ownership Graph Analysis <span class="tier-badge ml">Machine Learning</span></h4>
+                <div class="uc-row">
+                    <div class="uc-col">
+                        <h5>Data Inputs</h5>
+                        <p>Provider enrollment data (ownership, managing employees, TINs), corporate registration records, shared addresses/phone numbers, NPI/NPPES data, known sanction lists</p>
+                    </div>
+                    <div class="uc-col">
+                        <h5>What AI Does</h5>
+                        <p>Graph analysis: maps relationships between providers, identifies connected entities, surfaces hidden ownership links. Flags networks where one entity has sanctions/fraud history and others share ownership or management.</p>
+                    </div>
+                </div>
+                <div class="uc-row">
+                    <div class="uc-col">
+                        <h5>Expected Output</h5>
+                        <p>Network visualization showing provider relationships, risk inheritance paths, and flagged connections. Summary: "Provider A (sanctioned) shares managing employee with Providers B, C (active, no prior flags)."</p>
+                    </div>
+                    <div class="uc-col">
+                        <h5>Workflow Impact</h5>
+                        <p>Feeds into Risk Signal Generation (Step 2) and Investigation (Step 5). Enables proactive enrollment screening and supports network-level investigations.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="use-case-card" id="uc3">
+                <h4>Use Case 3: Document Summarization &amp; Triage <span class="tier-badge genai">Generative AI</span></h4>
+                <div class="uc-row">
+                    <div class="uc-col">
+                        <h5>Data Inputs</h5>
+                        <p>Clinical records, treatment plans, progress notes, transportation logs, consent forms, prior authorization documentation</p>
+                    </div>
+                    <div class="uc-col">
+                        <h5>What AI Does</h5>
+                        <p>NLP/LLM summarization: extracts key facts from multi-page records, identifies missing documentation, flags inconsistencies between billed services and clinical notes. Cites source pages.</p>
+                    </div>
+                </div>
+                <div class="uc-row">
+                    <div class="uc-col">
+                        <h5>Expected Output</h5>
+                        <p>Structured summary per provider/claim set: services billed vs. documented, missing authorizations, templated/duplicate note alerts, with page citations. Confidence flags for uncertain extractions.</p>
+                    </div>
+                    <div class="uc-col">
+                        <h5>Workflow Impact</h5>
+                        <p>Feeds into Investigation/Review (Step 5). Reduces auditor time per case from hours to minutes for initial document triage. Human auditor still makes final determination.</p>
+                    </div>
+                </div>
+                <div class="callout success" style="margin-top:0.5rem;">
+                    <strong>What good looks like:</strong> An auditor who previously spent 3&#x2013;4 hours reviewing a 200-page clinical record can now review an AI-generated summary in 20 minutes, then spot-check the source pages cited. Throughput increases without sacrificing quality.
+                </div>
+            </div>
+
+            <div class="use-case-card" id="uc4">
+                <h4>Use Case 4: Cross-State Provider Visibility <span class="tier-badge ml">Machine Learning</span></h4>
+                <div class="uc-row">
+                    <div class="uc-col">
+                        <h5>Data Inputs</h5>
+                        <p>CMS public provider data sets, NPPES registry, OIG exclusion lists, state-reported sanctions, multi-state provider enrollment records, Provider Network Directory data</p>
+                    </div>
+                    <div class="uc-col">
+                        <h5>What AI Does</h5>
+                        <p>Entity resolution and cross-referencing: identifies providers operating across multiple states, flags cases where a provider has been sanctioned or investigated in one state but remains active in others. Matches on NPI, name variants, TIN, address proximity.</p>
+                    </div>
+                </div>
+                <div class="uc-row">
+                    <div class="uc-col">
+                        <h5>Expected Output</h5>
+                        <p>Alert: "Provider X (NPI: ###) terminated in State A for [reason] on [date] &#x2014; currently active in State B, C with $X in annual billings." Includes linked entity details and source citations.</p>
+                    </div>
+                    <div class="uc-col">
+                        <h5>Workflow Impact</h5>
+                        <p>Feeds into Signal Capture (Step 1) and Enrollment Risk Tiering. Enables states to catch risks that would be invisible without cross-program visibility.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="use-case-card" id="uc5">
+                <h4>Use Case 5: Enrollment/Revalidation Risk Tiering <span class="tier-badge conventional">Conventional Analytics</span> <span class="tier-badge ml">ML</span></h4>
+                <div class="uc-row">
+                    <div class="uc-col">
+                        <h5>Data Inputs</h5>
+                        <p>Provider application data, ownership disclosures, prior investigation history, peer group risk indicators, geographic/access context</p>
+                    </div>
+                    <div class="uc-col">
+                        <h5>What AI Does</h5>
+                        <p>Risk scoring: compares provider attributes against known risk indicators. Assigns risk tier (standard, enhanced, deny-pending-review) based on combination of factors. Explains contributing features.</p>
+                    </div>
+                </div>
+                <div class="uc-row">
+                    <div class="uc-col">
+                        <h5>Expected Output</h5>
+                        <p>Risk tier assignment with rationale: "Enhanced review recommended &#x2014; 3 risk factors: new entity formed &lt;6 months, shared address with previously terminated provider, high-risk service category."</p>
+                    </div>
+                    <div class="uc-col">
+                        <h5>Workflow Impact</h5>
+                        <p>Front-door prevention. Enrollment staff use tier assignment to determine review depth. Tool does NOT deny enrollment &#x2014; it routes applications for appropriate human review level.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="use-case-card" id="uc6">
+                <h4>Use Case 6: Rural Access Impact Overlay <span class="tier-badge conventional">Conventional Analytics</span></h4>
+                <div class="uc-row">
+                    <div class="uc-col">
+                        <h5>Data Inputs</h5>
+                        <p>Provider locations, member locations, travel time data, network adequacy standards, provider taxonomy/capacity, risk signals from other use cases</p>
+                    </div>
+                    <div class="uc-col">
+                        <h5>What AI Does</h5>
+                        <p>Geospatial analysis: maps provider risk signals against geographic access data. Calculates impact of potential adverse actions on member access. Identifies sole-community providers.</p>
+                    </div>
+                </div>
+                <div class="uc-row">
+                    <div class="uc-col">
+                        <h5>Expected Output</h5>
+                        <p>Access impact report: "If Provider Y is suspended, 1,200 members in County Z would need to travel 45+ additional miles for behavioral health services. Next nearest provider at capacity."</p>
+                    </div>
+                    <div class="uc-col">
+                        <h5>Workflow Impact</h5>
+                        <p>Feeds into Access &amp; Proportionality Review (Step 6). Ensures states consider access consequences before taking high-consequence integrity actions in rural/underserved areas.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="callout info">
+                <strong>Note:</strong> These use cases are illustrative. Each state should define use cases based on their specific priorities, data availability, legal authority, and staff capacity. The model card template (&#xa7;9.3) &#x2014; a standardized disclosure form for an AI tool, similar to a nutrition label &#x2014; provides a structured way to document each use case.
+            </div>
+        </div>
+        <!-- 4-PHASE MODEL SECTION -->
+        <div id="phases" class="section">
+            <h2 style="margin-bottom:1rem; color:var(--primary);">3. The Solution: 4-Phase AI-Enabled Model</h2>
+
+            <div class="callout info">
+                Each phase has a <strong>decision gate</strong> so states do not scale a tool before governance, workflow, evidence, and access safeguards are ready. Phases can be compressed or expanded based on state readiness.
+            </div>
+
+            <div class="card" style="margin-top:1rem;">
+                <h3>Phase Overview</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Phase</th><th>Timing</th><th>Primary Question</th><th>Decision Gate</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="phase-badge p1">Phase 1</span> Foundation</td>
+                                <td>Months 0&#x2013;2</td>
+                                <td>Are we ready to pilot safely?</td>
+                                <td>Proceed only if the state can define purpose, governance, data, and safeguards</td>
+                            </tr>
+                            <tr>
+                                <td><span class="phase-badge p2">Phase 2</span> Pilots</td>
+                                <td>Months 3&#x2013;6</td>
+                                <td>Can this workflow improve lead quality without harm?</td>
+                                <td>Proceed only if pilot shows useful performance without unacceptable bias or burden</td>
+                            </tr>
+                            <tr>
+                                <td><span class="phase-badge p3">Phase 3</span> Scale</td>
+                                <td>Months 6&#x2013;12</td>
+                                <td>Can we integrate and operate across workflows?</td>
+                                <td>Proceed only if operational capacity, monitoring, and vendor controls are ready</td>
+                            </tr>
+                            <tr>
+                                <td><span class="phase-badge p4">Phase 4</span> Continuous Ops</td>
+                                <td>Month 12+</td>
+                                <td>Can we sustain, monitor, and improve responsibly?</td>
+                                <td>Continue only if benefits, fairness, access, and defensibility are maintained</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="tab-group" style="margin-top:1.5rem;">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" onclick="switchTab(event, 'phase1')">Phase 1: Foundation</button>
+                    <button class="tab-btn" onclick="switchTab(event, 'phase2')">Phase 2: Pilots</button>
+                    <button class="tab-btn" onclick="switchTab(event, 'phase3')">Phase 3: Scale</button>
+                    <button class="tab-btn" onclick="switchTab(event, 'phase4')">Phase 4: Continuous Ops</button>
+                </div>
+
+                <div id="phase1" class="tab-content active">
+                    <div class="card">
+                        <span class="phase-badge p1">Months 0&#x2013;2</span>
+                        <h3>Phase 1: Foundation &#x2014; Key Activities Checklist</h3>
+                        <div class="progress-text"><span class="check-count" data-group="p1">0</span> / 8 completed</div>
+                        <div class="progress-bar"><div class="fill" data-group="p1" style="width:0%"></div></div>
+                        <ul class="checklist" data-group="p1">
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Establish the core governance team: Program integrity/OIG, Medicaid leadership, provider enrollment, data/analytics, MES/MMIS, privacy/security, legal/hearings, procurement, provider relations, and rural/access representatives</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Define the risk domains: Create a common taxonomy for fraud, waste, abuse, patient harm, provider burden, network adequacy, rural access, data quality, and legal defensibility</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Inventory data sources: Identify claims, encounters, enrollment, ownership, licensure, sanctions, prior investigations, audit outcomes, documentation, public data (including CMS public data sets and Provider Network Directory), geospatial/access data, and vendor-held data</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Document legal and policy constraints: State statutes, overpayment rules, extrapolation limits, notice/hearing requirements, payment hold authorities, provider termination rules, and appeal standards</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Define AI decision rights: What the tool may recommend, what it may not do, and which decisions require documented human approval</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Document state AI data use policies: What data may be used for model training, de-identification requirements, vendor data rights, and state control over training data decisions</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Develop baseline metrics: Current lead volume, lead-to-investigation conversion, false-positive experience, dollars identified/recovered/prevented, time to triage, provider burden, appeal outcomes, and rural access indicators</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Create initial templates: Use-case intake, model card, data source register, vendor question set, evidence packet, risk register, rural access impact review, and implementation fact sheet</span></li>
+                        </ul>
+                    </div>
+                </div>
+                <div id="phase2" class="tab-content">
+                    <div class="card">
+                        <span class="phase-badge p2">Months 3&#x2013;6</span>
+                        <h3>Phase 2: Pilots &#x2014; Recommended Pilot Designs</h3>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead><tr><th>Pilot</th><th>What AI/Analytics Can Do</th><th>Required Human Control</th><th>Primary Safeguards</th></tr></thead>
+                                <tbody>
+                                    <tr><td><strong>Enrollment/revalidation risk tiering</strong></td><td>Compare provider attributes, ownership, and behavior against risk indicators</td><td>Enrollment or PI staff approve enhanced screening decisions</td><td>Data provenance, explainable features, provider due process</td></tr>
+                                    <tr><td><strong>Post-payment document triage</strong></td><td>Summarize and classify large record sets for investigator review</td><td>Auditor/investigator decides which claims are unsupported</td><td>Validation against closed cases, hallucination controls</td></tr>
+                                    <tr><td><strong>Rural access impact overlay</strong></td><td>Map provider risk signals against geographic access data</td><td>Policy and access staff review escalation before action</td><td>Separate risk from access; avoid suppressing valid risk signals</td></tr>
+                                    <tr><td><strong>Cross-state provider matching</strong></td><td>Match providers across CMS public data and state enrollment to identify multi-state risk</td><td>Enrollment staff verify matches before acting on cross-state flags</td><td>Entity resolution accuracy validation, false-match rate monitoring</td></tr>
+                                    <tr><td><strong>Public-case scenario testing</strong></td><td>Use public enforcement cases to create scenario-based test signals</td><td>SMEs decide whether typology is applicable to state</td><td>No model training on biased or unverified data</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="phase3" class="tab-content">
+                    <div class="card">
+                        <span class="phase-badge p3">Months 6&#x2013;12</span>
+                        <h3>Phase 3: Scale &#x2014; Key Activities Checklist</h3>
+                        <div class="progress-text"><span class="check-count" data-group="p3">0</span> / 6 completed</div>
+                        <div class="progress-bar"><div class="fill" data-group="p3" style="width:0%"></div></div>
+                        <ul class="checklist" data-group="p3">
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Integrate alerts into existing case management, provider enrollment, payment integrity, or audit workflows</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Implement role-based dashboards for executives, investigators, enrollment staff, data teams, provider relations, and rural/access leaders</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Create threshold management processes so the state can adjust sensitivity based on capacity, priorities, and legal requirements</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Formalize reviewer training, documentation requirements, override reason codes, escalation rules, and provider engagement paths</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Establish production MLOps/ModelOps: version control, validation, drift detection, data quality monitoring, performance reporting, and change approval</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Embed procurement and vendor obligations: audit logs, documentation, test results, explainability, data rights, security requirements, subcontractor visibility, and data training restrictions</span></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div id="phase4" class="tab-content">
+                    <div class="card">
+                        <span class="phase-badge p4">Month 12+</span>
+                        <h3>Phase 4: Continuous Operations &#x2014; Key Activities Checklist</h3>
+                        <div class="progress-text"><span class="check-count" data-group="p4">0</span> / 7 completed</div>
+                        <div class="progress-bar"><div class="fill" data-group="p4" style="width:0%"></div></div>
+                        <ul class="checklist" data-group="p4">
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Conduct quarterly model performance and drift reviews</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Review false positives, false negatives, appeal reversals, and provider complaints</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Update typologies using new schemes, public enforcement cases, state case outcomes, and SME feedback</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Run annual bias/equity and rural access impact reviews</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Maintain an AI inventory and use-case documentation for public, legislative, audit, FOIA/open-records, and procurement inquiries</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Reassess vendors, data-sharing agreements, training data policies, and security controls at least annually</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Retire models or thresholds that no longer add value or that create disproportionate burden or risk</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- WORKFLOW SECTION -->
+        <div id="workflow" class="section">
+            <h2 style="margin-bottom:1rem; color:var(--primary);">4. The Workflow: Human-Centered and Auditable</h2>
+
+            <div class="callout info">
+                AI is used to <strong>support</strong> risk monitoring, not to make final adverse decisions. The workflow should be adapted to state-specific context: prevention, enrollment, post-payment review, payment hold, provider education, audit, investigation, referral, contested case hearing, or access monitoring.
+            </div>
+
+            <div class="callout success" style="margin-top:0.5rem;">
+                <strong>What good looks like:</strong> A state running this workflow can reconstruct the full decision path for any case &#x2014; from the original data signal through human review to final action &#x2014; and explain it in plain language to an ALJ, auditor, legislator, or provider within 15 minutes. Every step has an owner, a timestamp, and documented rationale.
+            </div>
+
+            <h3 style="margin:1.5rem 0 1rem;">4.1 Human-in-the-Loop Operating Model</h3>
+
+            <div class="workflow-step">
+                <div class="step-num">1</div>
+                <div class="step-content">
+                    <h4>Signal Capture</h4>
+                    <p><strong>AI role:</strong> Ingest and normalize claims, enrollment, documentation, ownership, and public data (including CMS data sets and cross-state sources)</p>
+                    <p><strong>Human role:</strong> Data owners confirm source authority, quality, and permitted uses</p>
+                    <p><strong>Output:</strong> Data source register and data quality scorecard</p>
+                </div>
+            </div>
+            <div class="workflow-step">
+                <div class="step-num">2</div>
+                <div class="step-content">
+                    <h4>Risk Signal Generation</h4>
+                    <p><strong>AI role:</strong> Identify anomalies, peer outliers, text/document patterns, ownership changes, cross-state flags, and behavioral shifts</p>
+                    <p><strong>Human role:</strong> SMEs validate whether signals are meaningful and exclude inappropriate features</p>
+                    <p><strong>Output:</strong> Signal catalog with rationale and exclusion list</p>
+                </div>
+            </div>
+            <div class="workflow-step">
+                <div class="step-num">3</div>
+                <div class="step-content">
+                    <h4>Risk Stratification</h4>
+                    <p><strong>AI role:</strong> Score or tier provider risk using rules, models, or hybrid approaches</p>
+                    <p><strong>Human role:</strong> Program leaders approve thresholds based on capacity, priorities, and legal requirements</p>
+                    <p><strong>Output:</strong> Risk tier, top contributing factors, confidence level, and limitations</p>
+                </div>
+            </div>
+            <div class="workflow-step">
+                <div class="step-num">4</div>
+                <div class="step-content">
+                    <h4>Triage</h4>
+                    <p><strong>AI role:</strong> Organize alerts by priority and generate supporting evidence summaries</p>
+                    <p><strong>Human role:</strong> Triage team accepts, rejects, routes, or requests more information</p>
+                    <p><strong>Output:</strong> Triage decision, reason code, reviewer, and timestamp</p>
+                </div>
+            </div>
+            <div class="workflow-step">
+                <div class="step-num">5</div>
+                <div class="step-content">
+                    <h4>Investigation / Review</h4>
+                    <p><strong>AI role:</strong> Organize records, highlight relevant documents, identify related providers or claims</p>
+                    <p><strong>Human role:</strong> Investigator/auditor conducts independent review and documents rationale</p>
+                    <p><strong>Output:</strong> Evidence packet with human analysis and independent findings</p>
+                </div>
+            </div>
+            <div class="workflow-step">
+                <div class="step-num">6</div>
+                <div class="step-content">
+                    <h4>Access &amp; Proportionality Review</h4>
+                    <p><strong>AI role:</strong> Provide geographic, network, and access context for the provider</p>
+                    <p><strong>Human role:</strong> Access/policy staff assess rural impact and proportionality</p>
+                    <p><strong>Output:</strong> Access impact assessment and mitigation plan (if needed)</p>
+                </div>
+            </div>
+            <div class="workflow-step">
+                <div class="step-num">7</div>
+                <div class="step-content">
+                    <h4>Action Decision</h4>
+                    <p><strong>AI role:</strong> Provide organized evidence and contributing factors for decision-maker</p>
+                    <p><strong>Human role:</strong> Authorized official approves action with documented rationale and legal authority</p>
+                    <p><strong>Output:</strong> Action decision, authority cited, approval chain, and provider notice</p>
+                </div>
+            </div>
+            <div class="workflow-step">
+                <div class="step-num">8</div>
+                <div class="step-content">
+                    <h4>Feedback &amp; Learning</h4>
+                    <p><strong>AI role:</strong> Ingest dispositions, appeal outcomes, and reviewer feedback</p>
+                    <p><strong>Human role:</strong> Data/model team evaluates performance, bias, and improvement opportunities</p>
+                    <p><strong>Output:</strong> Performance report, model recalibration input, and lessons learned</p>
+                </div>
+            </div>
+
+            <div class="callout success" style="margin-top:1.5rem;">
+                <strong>Defensibility Design Principle:</strong> At every step, the state should be able to explain &#x2014; in plain language to an ALJ, auditor, or legislator &#x2014; what data was used, what the AI did, what the human decided, and why. If you cannot reconstruct that path, the workflow is not ready for high-consequence actions.
+            </div>
+        </div>
+        <!-- GOVERNANCE SECTION -->
+        <div id="governance" class="section">
+            <h2 style="margin-bottom:1rem; color:var(--primary);">5. Governance Rules</h2>
+            <p style="margin-bottom:1rem;">Governance is not a separate compliance exercise. It is the set of rules that makes AI-enabled risk monitoring usable, defensible, and sustainable.</p>
+
+            <div class="callout info" style="margin-bottom:1.5rem;">
+                <strong>Prioritization guidance:</strong> Twelve rules can feel like twelve prerequisites. They are not. Four rules are marked <span class="priority-tag required" style="display:inline-block; font-size:0.7rem; padding:0.1rem 0.4rem; border-radius:3px; background:#c53030; color:white;">REQUIRED BEFORE PILOT</span> &#x2014; these are non-negotiable before any live testing. The remaining eight should be <span class="priority-tag build" style="display:inline-block; font-size:0.7rem; padding:0.1rem 0.4rem; border-radius:3px; background:#2f855a; color:white;">BUILT OVER FIRST YEAR</span> as the program matures.
+            </div>
+
+            <div class="governance-rule" style="border-left-color: #c53030;" id="gov-rules">
+                <h4>1. Define the use case before selecting a tool <span class="priority-tag required">REQUIRED BEFORE PILOT</span></h4>
+                <p>Every AI-enabled capability should have a written use-case charter that identifies the business problem, decision supported, affected populations, data sources, human decision rights, risks, success metrics, and stop conditions.</p>
+            </div>
+            <div class="governance-rule" style="border-left-color: #c53030;">
+                <h4>2. No autonomous adverse action <span class="priority-tag required">REQUIRED BEFORE PILOT</span></h4>
+                <p>AI-generated outputs may prioritize, summarize, recommend, or route. They should not independently deny enrollment, terminate providers, reduce access, initiate recovery, or make eligibility decisions without state-approved human review and due process.</p>
+            </div>
+            <div class="governance-rule" style="border-left-color: #c53030;">
+                <h4>3. Preserve evidence lineage <span class="priority-tag required">REQUIRED BEFORE PILOT</span></h4>
+                <p>The state must be able to show where data came from, how it was transformed, why the alert fired, what model/version was used, what the human reviewer did, and what evidence supported action.</p>
+            </div>
+            <div class="governance-rule">
+                <h4>4. Treat data quality as a risk control <span class="priority-tag build">BUILD OVER FIRST YEAR</span></h4>
+                <p>Public data, provider location data, NPI/NPPES records, billing locations, and service locations may be incomplete or misleading. States should validate data before drawing conclusions and should document known limitations.</p>
+            </div>
+            <div class="governance-rule">
+                <h4>5. Test for bias and proxy discrimination <span class="priority-tag build">BUILD OVER FIRST YEAR</span></h4>
+                <p>Models should not learn that geography, ethnicity, language, community, or other protected/proxy characteristics are risk indicators when the true signal is service pattern, ownership, billing behavior, documentation, or referral structure.</p>
+            </div>
+            <div class="governance-rule">
+                <h4>6. Calibrate thresholds to capacity and law <span class="priority-tag build">BUILD OVER FIRST YEAR</span></h4>
+                <p>Each state should choose thresholds that align with staff capacity, recovery priorities, patient harm risks, network adequacy, and statutory constraints. More alerts are not always better.</p>
+            </div>
+            <div class="governance-rule">
+                <h4>7. Monitor provider burden and rural access <span class="priority-tag build">BUILD OVER FIRST YEAR</span></h4>
+                <p>Before escalation, assess whether action would disrupt access, especially in rural areas or provider-scarce service lines. Consider education, corrective action, or targeted review when appropriate.</p>
+            </div>
+            <div class="governance-rule">
+                <h4>8. Require vendor transparency and accountability <span class="priority-tag build">BUILD OVER FIRST YEAR</span></h4>
+                <p>Vendors must document data sources, model behavior, updates, explainability, testing, bias controls, security, subcontractors, audit logs, data rights, and transition/exit procedures. For multi-layer AI solutions, the primary vendor remains liable and must disclose the full technology stack.</p>
+            </div>
+            <div class="governance-rule">
+                <h4>9. Design for hearings, audits, and public scrutiny <span class="priority-tag build">BUILD OVER FIRST YEAR</span></h4>
+                <p>Assume the state may need to explain the system to an ALJ, auditor, legislator, provider, beneficiary, journalist, or public-records requester. Plain-language documentation should exist before the first high-consequence action.</p>
+            </div>
+            <div class="governance-rule" style="border-left-color: #c53030;">
+                <h4>10. Keep humans accountable and empowered <span class="priority-tag required">REQUIRED BEFORE PILOT</span></h4>
+                <p>Human reviewers must be trained, must have time to review the evidence, must be able to override the tool, and must document their independent rationale.</p>
+            </div>
+            <div class="governance-rule">
+                <h4>11. Control vendor use of state data for AI training <span class="priority-tag build">BUILD OVER FIRST YEAR</span></h4>
+                <p>Vendor solutions should not ingest state or provider data as training data unless the state explicitly determines that usage is appropriate through a documented process. Data used for training must be de-identified per state and federal standards.</p>
+            </div>
+            <div class="governance-rule">
+                <h4>12. Require transparency and disclosure via model cards <span class="priority-tag build">BUILD OVER FIRST YEAR</span></h4>
+                <p>States should require vendors to provide standardized model documentation (model cards &#x2014; a standardized disclosure form for an AI tool, similar to a nutrition label) covering: intended use, performance metrics, training data, quantitative analysis, ethical considerations, and limitations.</p>
+            </div>
+
+            <!-- Provider Disclosure Discussion (NEW) -->
+            <div class="card" style="margin-top:1.5rem;" id="gov-disclosure">
+                <h3>5.2 Provider Disclosure: Should States Tell Providers AI Is Used?<span class="new-badge">NEW</span></h3>
+                <p>States will be asked whether providers are informed that AI-assisted tools are part of risk monitoring. This guide recommends states develop a disclosure position early, because the question will arise from provider associations, legislators, and the press regardless.</p>
+                <p style="margin-top:0.75rem;"><strong>Considerations:</strong></p>
+                <ul style="margin:0.5rem 0 0 1.5rem;">
+                    <li><strong>Transparency builds trust:</strong> Providers who understand how monitoring works are less likely to perceive it as arbitrary or punitive.</li>
+                    <li><strong>Disclosure does not mean revealing methodology:</strong> States can describe the general approach (e.g., "we use analytics to identify billing patterns for human review") without disclosing specific thresholds or detection logic.</li>
+                    <li><strong>Legal considerations vary:</strong> Some states may have open-records obligations that effectively require disclosure; others may have investigatory exemptions. Legal counsel should advise.</li>
+                    <li><strong>Timing matters:</strong> Disclosure at enrollment/revalidation (general notice) differs from disclosure during an active investigation (specific notice with due process implications).</li>
+                </ul>
+                <p style="margin-top:0.75rem;">At minimum, states should document their disclosure policy and ensure it is consistent across communications. Silence is not a strategy &#x2014; it becomes the story when a provider or journalist asks.</p>
+            </div>
+
+            <h3 style="margin:2rem 0 1rem;" id="gov-charter">5.3 Governance Board Charter</h3>
+            <div class="card">
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Governance Function</th><th>Recommended Membership</th><th>Cadence</th><th>Primary Decisions</th></tr></thead>
+                        <tbody>
+                            <tr><td>AI use-case approval</td><td>Medicaid leadership, PI/OIG, legal, privacy, data, access</td><td>At intake and before pilot</td><td>Approve purpose, scope, affected workflows, and safeguards</td></tr>
+                            <tr><td>Model/data review</td><td>Data science, data governance, SMEs, privacy</td><td>Monthly during pilot; quarterly in production</td><td>Approve features, data quality, validation, bias testing</td></tr>
+                            <tr><td>Operational review</td><td>PI supervisors, enrollment leaders, provider relations, access</td><td>Monthly</td><td>Review alert volume, disposition, false positives, burden</td></tr>
+                            <tr><td>Executive oversight</td><td>Medicaid director/designee, OIG/program integrity, legal</td><td>Quarterly</td><td>Approve scale, pause, budget, vendor changes, risk acceptance</td></tr>
+                            <tr><td>Data training &amp; rights review</td><td>Legal, privacy, data governance, vendor management</td><td>At contract and annually</td><td>Approve training data policies, de-identification standards, vendor data use</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <!-- RISK FRAMEWORK SECTION -->
+        <div id="risks" class="section">
+            <h2 style="margin-bottom:1rem; color:var(--primary);">6. Risk Framework: Conventional Risks &rarr; AI Impact &rarr; Mitigations</h2>
+            <p style="margin-bottom:1rem;">This framework helps states understand how AI affects existing program integrity risks. For each conventional risk, we identify how AI may expand exposure and what AI-specific mitigations are needed.</p>
+
+            <div class="card">
+                <div class="risk-row risk-header">
+                    <div>Conventional Risk</div>
+                    <div>AI Impact on Risk</div>
+                    <div>AI-Specific Mitigations</div>
+                </div>
+                <div class="risk-row">
+                    <div><strong>Inadequate evidence for adverse action</strong> &#x2014; State takes action without sufficient documentation to survive appeal</div>
+                    <div>AI accelerates lead volume, potentially leading to more cases where traceability is incomplete.</div>
+                    <div>Require evidence lineage documentation before action. Model card disclosure. Human reviewer must independently document rationale.</div>
+                </div>
+                <div class="risk-row">
+                    <div><strong>False positive burden on legitimate providers</strong> &#x2014; Good-faith providers subjected to unnecessary audits or holds</div>
+                    <div>AI models may flag providers based on proxy variables rather than actual behavior. Higher alert volumes if thresholds poorly calibrated.</div>
+                    <div>Bias testing. Behavior-based features. Threshold calibration to capacity. Provider education path before punitive action. Track false-positive rates.</div>
+                </div>
+                <div class="risk-row">
+                    <div><strong>Rural access disruption</strong> &#x2014; Integrity action removes sole provider from underserved area</div>
+                    <div>AI may not account for geographic context unless explicitly designed to. Speed of automated flagging may skip access review.</div>
+                    <div>Mandatory access impact overlay. Sole-community provider check. Proportionality review step before high-consequence action.</div>
+                </div>
+                <div class="risk-row">
+                    <div><strong>Vendor lock-in / loss of state control</strong> &#x2014; State cannot operate, modify, or exit vendor solution</div>
+                    <div>AI systems may be opaque. Vendor may retain proprietary model details. State data may be used for vendor training without consent.</div>
+                    <div>Contract terms for data return/destruction. Require model documentation. Prohibit unauthorized training data use. Document exit procedures.</div>
+                </div>
+                <div class="risk-row">
+                    <div><strong>Legal defensibility failure</strong> &#x2014; State cannot explain decision-making process in hearing or audit</div>
+                    <div>AI introduces complexity difficult to explain to ALJs, legislators, or public. "Black box" perception undermines credibility.</div>
+                    <div>Model cards with plain-language summaries. Standardized evidence packets. Human-authored rationale required. Design for disclosure from day one.</div>
+                </div>
+                <div class="risk-row">
+                    <div><strong>Data quality / completeness gaps</strong> &#x2014; Decisions based on incomplete or stale data</div>
+                    <div>AI amplifies data quality issues at scale. Entity matching errors can create cascading false positives.</div>
+                    <div>Data quality scorecards. Known-limitation documentation. Validation against ground truth. Human verification before action.</div>
+                </div>
+                <div class="risk-row">
+                    <div><strong>Bias and disparate impact</strong> &#x2014; Monitoring disproportionately affects certain provider populations</div>
+                    <div>Models may learn historical bias from training data. Proxy discrimination through geography, language, or community characteristics.</div>
+                    <div>Unsupervised learning where appropriate. Feature exclusion lists. Disparate impact testing. Annual equity reviews.</div>
+                </div>
+                <div class="risk-row">
+                    <div><strong>Multi-layer vendor accountability gap</strong> &#x2014; Unclear who is liable when vendor uses third-party AI</div>
+                    <div>Vendor may use foundation models creating multiple accountability layers. State may not know which model is making inferences.</div>
+                    <div>Primary vendor remains liable. Require disclosure of full AI stack. Vendor model card + state implementation fact sheet. Sub-processor accountability clause.</div>
+                </div>
+            </div>
+
+            <div class="callout info">
+                <strong>How to use this framework:</strong> For each AI use case the state is considering, walk through these risks and document which mitigations are in place, which are planned, and which gaps remain. This becomes the basis for the governance board's risk acceptance decision at each phase gate.
+            </div>
+        </div>
+        <!-- DATA & ALERTS SECTION -->
+        <div id="data" class="section">
+            <h2 style="margin-bottom:1rem; color:var(--primary);">7. Data &amp; Alerts</h2>
+
+            <h3 style="margin:1rem 0;" id="data-sources">7.1 Data Sources</h3>
+            <div class="card">
+                <p style="margin-bottom:1rem;">The data strategy should begin with a data source register identifying source owner, refresh frequency, data sharing authority, quality issues, missing fields, known limitations, privacy/security classification, and permitted uses.</p>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Data Category</th><th>Examples</th><th>Risk-Monitoring Value</th><th>Cautions</th></tr></thead>
+                        <tbody>
+                            <tr><td>Claims &amp; encounters</td><td>Paid claims, denied claims, claim lines, dates, amounts, codes</td><td>Peer comparison, spikes, impossible volumes, coding anomalies</td><td>Encounter completeness and MCO variation</td></tr>
+                            <tr><td>Provider enrollment</td><td>NPI, TIN, taxonomy, service location, managing employee, ownership</td><td>Front-door risk, ownership links, address anomalies</td><td>NPI and service location data may be incomplete or stale</td></tr>
+                            <tr><td>Licensure &amp; sanctions</td><td>Licensing boards, exclusions, terminations, disciplinary actions</td><td>Eligibility to participate, escalation triggers</td><td>Matching errors can create serious false positives</td></tr>
+                            <tr><td>Documentation &amp; attachments</td><td>Clinical records, treatment plans, transportation logs, consent</td><td>Medical necessity, missing/inconsistent documentation</td><td>LLM summaries must cite source text and flag uncertainty</td></tr>
+                            <tr><td>Ownership &amp; affiliations</td><td>Corporate structures, managing employees, related entities</td><td>Identify connected networks and nominee/straw owner patterns</td><td>Public records may lag; state must verify</td></tr>
+                            <tr><td>Geospatial &amp; access data</td><td>Provider locations, member locations, travel times, network adequacy</td><td>Rural access impact, impossible distances, geographic concentration</td><td>Service location vs. billing location discrepancies</td></tr>
+                            <tr><td>Public &amp; external sources</td><td>OIG exclusions, SAM, media reports, court records, NPPES</td><td>Early detection, corroboration, sanction history</td><td>Not determinative alone; validate before action</td></tr>
+                            <tr style="background:#faf5ff;"><td><strong>CMS Public Data Sets</strong></td><td>CMS provider enrollment, Medicare utilization, Medicaid provider releases, quality metrics</td><td>Cross-state visibility, national-level pattern detection</td><td>Large data sets require entity resolution</td></tr>
+                            <tr style="background:#faf5ff;"><td><strong>Provider Network Directory</strong></td><td>State and plan-level directories, network adequacy filings, capacity data</td><td>Access impact analysis, sole-community provider identification</td><td>Directory data may lag actual provider status</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <h3 style="margin:1.5rem 0 1rem;" id="data-alerts">7.2 Alert Approach</h3>
+            <div class="card">
+                <p style="margin-bottom:1rem;">A strong alert framework separates signal detection from decision-making. Alerts should be explainable enough for triage staff and flexible enough to reflect state priorities.</p>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Alert Family</th><th>Illustrative Signals</th><th>Potential Response</th><th>Access/Proportionality Check</th></tr></thead>
+                        <tbody>
+                            <tr><td>Enrollment &amp; identity</td><td>Rapid entity formation; shared addresses; nominee indicators</td><td>Enhanced verification, documentation request</td><td>Will enhanced review delay access in provider-scarce area?</td></tr>
+                            <tr><td>Billing velocity &amp; outliers</td><td>Impossible volumes; sudden spikes; statistical outliers vs. peers</td><td>Desk review, prepayment review, audit sampling</td><td>Is the provider uniquely serving a rural area?</td></tr>
+                            <tr><td>Documentation integrity</td><td>Missing consent/order; generated or templated notes</td><td>Record request, document triage, provider education</td><td>Is issue documentation weakness rather than fraud?</td></tr>
+                            <tr><td>Patient harm / vulnerable populations</td><td>Services billed but not provided; substance abuse exploitation</td><td>Rapid escalation, clinical review, referral</td><td>Member safety may outweigh access concerns</td></tr>
+                            <tr><td>Ownership &amp; network risk</td><td>Connected entities with shared sanctions; rapid ownership changes</td><td>Network investigation, enhanced enrollment review</td><td>Distinguish individual from systemic network risk</td></tr>
+                            <tr><td>Cross-state flags</td><td>Provider sanctioned/terminated in another state</td><td>Enhanced review, cross-state verification, enrollment hold</td><td>Verify entity match accuracy before acting</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <h3 style="margin:1.5rem 0 1rem;" id="data-metrics">7.3 Performance Metrics</h3>
+            <div class="card">
+                <p style="margin-bottom:0.75rem;">Metrics without benchmarks leave readers asking "what number is good?" The directional guidance column provides starting targets; states should refine based on their own baselines.<span class="new-badge">UPDATED</span></p>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Metric Area</th><th>Example Metrics</th><th>Directional Guidance<span class="new-badge">NEW</span></th></tr></thead>
+                        <tbody>
+                            <tr><td>Lead quality</td><td>Alert-to-review conversion, review-to-action rate, lead specificity</td><td>Target: &ge;30% alert-to-review conversion; &ge;15% review-to-action. Below 10% conversion suggests over-alerting.</td></tr>
+                            <tr><td>Operational efficiency</td><td>Records reviewed per hour, triage cycle time, time to resolution</td><td>AI-assisted triage should reduce cycle time by 25&#x2013;50% vs. manual baseline. Track trend over quarters.</td></tr>
+                            <tr><td>Financial integrity</td><td>Dollars prevented, dollars recovered, average overpayment identified</td><td>AI-assisted programs should show positive ROI within 12&#x2013;18 months. Cost per dollar recovered should decrease over time.</td></tr>
+                            <tr><td>Legal defensibility</td><td>Appeal outcomes, overturned actions, compliance with notice requirements</td><td>Appeal reversal rate should remain stable or decrease after AI implementation. Any increase warrants investigation.</td></tr>
+                            <tr><td>Equity &amp; access</td><td>Disparate impact analysis, rural provider impact, provider burden measures</td><td>No statistically significant disparity in alert rates across geography, provider type, or demographics. Flag any &gt;2x differential.</td></tr>
+                            <tr><td>Model health</td><td>Drift detection, data quality scores, feature stability, recalibration frequency</td><td>Performance metrics should remain within &plusmn;10% of validation benchmarks. Drift beyond this threshold triggers review.</td></tr>
+                            <tr><td>Cost efficiency</td><td>Cost per lead generated, cost per case resolved, AI operational costs vs. recovery value</td><td>Target total AI program cost at &lt;10% of annual recovery value. Track cost-per-lead trend quarterly.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <!-- STAFFING & TRAINING SECTION -->
+        <div id="staffing" class="section">
+            <h2 style="margin-bottom:1rem; color:var(--primary);">8. Staffing, Training &amp; Budget</h2>
+            <p style="margin-bottom:1.5rem;">Technology is not a substitute for the humans who must interpret the work, protect due process, and maintain access. AI may reduce effort to review large volumes of information, but it creates new work in governance, data quality, vendor monitoring, model review, evidence documentation, and change management.</p>
+
+            <h3 style="margin:1rem 0;" id="staff-roles">8.1 Minimum Team Roles</h3>
+            <div class="card">
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Role</th><th>Typical Responsibilities</th><th>Phase Emphasis</th></tr></thead>
+                        <tbody>
+                            <tr><td>Executive sponsor</td><td>Sets priorities, resolves cross-agency issues, approves risk acceptance</td><td>All phases</td></tr>
+                            <tr><td>Product owner / business lead</td><td>Owns use-case backlog, workflow requirements, success metrics</td><td>All phases</td></tr>
+                            <tr><td>Program integrity SMEs</td><td>Define typologies, validate alerts, interpret results, build cases</td><td>All phases</td></tr>
+                            <tr><td>Provider enrollment lead</td><td>Owns enrollment/revalidation use cases, validates data</td><td>Foundation through Scale</td></tr>
+                            <tr><td>Data/analytics lead</td><td>Model development, validation, monitoring, data quality</td><td>All phases</td></tr>
+                            <tr><td>Legal/hearings representative</td><td>Evidence standards, due process, hearing readiness</td><td>All phases</td></tr>
+                            <tr><td>Privacy/security officer</td><td>PHI/PII protections, data sharing, vendor security</td><td>All phases</td></tr>
+                            <tr><td>Vendor/procurement lead</td><td>Contract terms, performance monitoring, transparency requirements</td><td>Pilots through Continuous Ops</td></tr>
+                            <tr><td>Rural/access representative</td><td>Access impact review, geographic analysis, mitigation plans</td><td>All phases</td></tr>
+                            <tr><td>Training/change management</td><td>Reviewer training, documentation, workflow adoption, AI literacy</td><td>Scale through Continuous Ops</td></tr>
+                            <tr><td>IT/MES integration lead</td><td>System integration, data pipelines, dashboard deployment</td><td>Scale through Continuous Ops</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <h3 style="margin:1.5rem 0 1rem;" id="staff-training">8.2 Training &amp; Education</h3>
+            <div class="card">
+                <p style="margin-bottom:1rem;">Staff at multiple levels need AI literacy &#x2014; from those procuring AI solutions to those interacting with AI outputs daily.</p>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Audience</th><th>Training Focus</th><th>Key Outcomes</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>Procurement &amp; leadership</strong></td><td>AI evaluation fundamentals, model cards, vendor questions, risk/benefit assessment, contract terms for AI</td><td>Can evaluate vendor AI claims critically. Knows what to require in contracts.</td></tr>
+                            <tr><td><strong>Investigators &amp; auditors</strong></td><td>Interpreting AI-generated leads, understanding confidence levels, documenting independent rationale, override procedures</td><td>Can use AI outputs as one input while maintaining independent judgment.</td></tr>
+                            <tr><td><strong>Enrollment staff</strong></td><td>Risk tier interpretation, enhanced review triggers, provider communication, due process requirements</td><td>Understands what risk scores mean and do not mean.</td></tr>
+                            <tr><td><strong>Data &amp; analytics teams</strong></td><td>Model validation, bias testing, drift monitoring, data quality management, vendor model documentation review</td><td>Can assess whether a model is performing as intended.</td></tr>
+                            <tr><td><strong>Legal &amp; hearings staff</strong></td><td>AI evidence standards, explaining AI in hearings, defensibility requirements, disclosure obligations</td><td>Can present AI-assisted evidence in administrative proceedings.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="callout warning">
+                <strong>Common misconception:</strong> AI is not a magic wand. Even when AI generates a finding, a human must review it before it becomes actionable. Training should emphasize that AI outputs are leads and suggestions &#x2014; not conclusions or decisions.
+            </div>
+
+            <h3 style="margin:1.5rem 0 1rem;" id="staff-budget">8.3 Budget Planning Worksheet</h3>
+            <div class="card">
+                <p style="margin-bottom:1rem;">State maturity, procurement path, and technical architecture vary widely. The ranges below represent rough order-of-magnitude estimates based on peer state experience; actual costs depend on scope, vendor selection, and existing infrastructure.<span class="new-badge">UPDATED</span></p>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Budget Category</th><th>Phase 1<br>Foundation</th><th>Phase 2<br>Pilot</th><th>Phase 3<br>Scale</th><th>Phase 4<br>Operations (Annual)</th></tr></thead>
+                        <tbody>
+                            <tr><td>Staff/SME time</td><td>$50K&#x2013;$150K</td><td>$100K&#x2013;$300K</td><td>$200K&#x2013;$500K</td><td>$150K&#x2013;$400K</td></tr>
+                            <tr><td>Data inventory and engineering</td><td>$25K&#x2013;$100K</td><td>$50K&#x2013;$200K</td><td>$100K&#x2013;$300K</td><td>$50K&#x2013;$150K</td></tr>
+                            <tr><td>Analytics/model development or vendor licensing</td><td>$0&#x2013;$50K</td><td>$100K&#x2013;$500K</td><td>$200K&#x2013;$1M</td><td>$150K&#x2013;$750K</td></tr>
+                            <tr><td>AI compute and inference costs</td><td>Minimal</td><td>$10K&#x2013;$50K</td><td>$25K&#x2013;$150K</td><td>$25K&#x2013;$200K</td></tr>
+                            <tr><td>Security/privacy/legal review</td><td>$25K&#x2013;$75K</td><td>$25K&#x2013;$75K</td><td>$25K&#x2013;$100K</td><td>$25K&#x2013;$75K</td></tr>
+                            <tr><td>Integration and infrastructure</td><td>$0&#x2013;$25K</td><td>$50K&#x2013;$200K</td><td>$100K&#x2013;$400K</td><td>$50K&#x2013;$150K</td></tr>
+                            <tr><td>Training and change management</td><td>$10K&#x2013;$50K</td><td>$25K&#x2013;$75K</td><td>$50K&#x2013;$150K</td><td>$25K&#x2013;$75K</td></tr>
+                            <tr><td>Monitoring, audit, and oversight</td><td>$0&#x2013;$25K</td><td>$25K&#x2013;$75K</td><td>$50K&#x2013;$150K</td><td>$50K&#x2013;$150K</td></tr>
+                            <tr><td>Contingency / risk reserve</td><td>10&#x2013;15% of above</td><td>10&#x2013;15%</td><td>10&#x2013;15%</td><td>10&#x2013;15%</td></tr>
+                            <tr style="font-weight:700;"><td>Total estimated range</td><td>$125K&#x2013;$550K</td><td>$400K&#x2013;$1.5M</td><td>$800K&#x2013;$3M</td><td>$550K&#x2013;$2M/yr</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p style="font-size:0.8rem; color:var(--text-light); margin-top:0.5rem;"><em>Note:</em> These ranges reflect a medium-sized state program. Smaller states may be at the low end; large states with multiple use cases may exceed the high end. Ranges are intended to support budget requests, not to prescribe spending.</p>
+            </div>
+
+            <h3 style="margin:1.5rem 0 1rem;" id="staff-funding">8.4 Funding Pathways<span class="new-badge">NEW</span></h3>
+            <div class="card">
+                <p style="margin-bottom:0.75rem;">"Funding or federal/state approval uncertainty" was cited as a top-3 barrier by nearly half of survey respondents. This subsection outlines common funding vehicles for AI-enabled program integrity work.</p>
+
+                <h4 style="margin:1rem 0 0.5rem; color:var(--primary);">Federal Match Rates</h4>
+                <ul style="margin:0 0 1rem 1.5rem;">
+                    <li><strong>90/10 federal match (Design, Development, Installation):</strong> Available for MES investments including AI/analytics systems during initial development, subject to CMS APD approval. Covers design through go-live.</li>
+                    <li><strong>75/25 federal match (Operations):</strong> Available for ongoing operation and maintenance of approved MES systems, including AI monitoring tools after go-live.</li>
+                    <li><strong>50/50 federal match (Administrative):</strong> May apply to staff activities, training, and governance functions that support program integrity but are not part of an approved MES project.</li>
+                </ul>
+
+                <h4 style="margin:1rem 0 0.5rem; color:var(--primary);">APD (Advance Planning Document) Submissions</h4>
+                <p>States funding AI through MES channels will typically need to submit an APD to CMS. Key elements for an AI-focused APD include:</p>
+                <ul style="margin:0.5rem 0 1rem 1.5rem;">
+                    <li>Clear problem statement tied to program integrity outcomes</li>
+                    <li>Use-case definition with expected ROI and success metrics</li>
+                    <li>Governance framework demonstrating responsible AI use</li>
+                    <li>Staffing and training plan</li>
+                    <li>Cost-benefit analysis with phased implementation timeline</li>
+                    <li>Security, privacy, and data governance documentation</li>
+                </ul>
+                <p><em>Peer reference:</em> At least one participating state (Colorado) has expressed interest in sharing APD approaches with peers. The workstream will facilitate these exchanges where states consent.</p>
+
+                <h4 style="margin:1rem 0 0.5rem; color:var(--primary);">Other Funding Vehicles</h4>
+                <ul style="margin:0.5rem 0 0 1.5rem;">
+                    <li><strong>MFCU coordination:</strong> Joint investments with the Medicaid Fraud Control Unit where analytics support both PI and MFCU investigations</li>
+                    <li><strong>Existing MMIS/MES contracts:</strong> Adding AI modules to existing vendor contracts through change orders or option periods</li>
+                    <li><strong>State general funds:</strong> For smaller pilots or governance activities that do not meet MES APD thresholds</li>
+                    <li><strong>CMS Medicaid Innovation Accelerator Program (IAP):</strong> Technical assistance resources that may offset state costs for planning and design</li>
+                </ul>
+            </div>
+        </div>
+        <!-- TEMPLATES SECTION -->
+        <div id="templates" class="section">
+            <h2 style="margin-bottom:1rem; color:var(--primary);">9. Implementation Templates</h2>
+
+            <div class="tab-group">
+                <div class="tab-buttons">
+                    <button class="tab-btn active" onclick="switchTab(event, 'tmpl-readiness')">Readiness Assessment</button>
+                    <button class="tab-btn" onclick="switchTab(event, 'tmpl-vendor')">Vendor Questions</button>
+                    <button class="tab-btn" onclick="switchTab(event, 'tmpl-modelcard')">Model Card Rubric</button>
+                    <button class="tab-btn" onclick="switchTab(event, 'tmpl-implsheet')">Implementation Fact Sheet</button>
+                    <button class="tab-btn" onclick="switchTab(event, 'tmpl-evidence')">ALJ Evidence Packet</button>
+                    <button class="tab-btn" onclick="switchTab(event, 'tmpl-rural')">Rural Access Review</button>
+                </div>
+
+                <div id="tmpl-readiness" class="tab-content active">
+                    <div class="card">
+                        <h3>9.1 State Readiness Self-Assessment</h3>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead><tr><th>Readiness Domain</th><th>Questions to Answer</th><th>Evidence / Artifact</th></tr></thead>
+                                <tbody>
+                                    <tr><td>Mission and priorities</td><td>Which specific risk, provider type, service line, or decision does the state want to improve first?</td><td>Use-case charter and success metrics</td></tr>
+                                    <tr><td>Legal authority</td><td>What state/federal authority supports the intended use and enforcement actions?</td><td>Legal/evidence memo</td></tr>
+                                    <tr><td>Data readiness</td><td>Which data sources are available, reliable, and authorized for this use?</td><td>Data source register and quality assessment</td></tr>
+                                    <tr><td>Workflow readiness</td><td>Who receives alerts? Who reviews them? Who acts? What is the current process?</td><td>Workflow SOP and RACI</td></tr>
+                                    <tr><td>Staff capacity</td><td>Does the state have staff trained and available for triage, review, governance, and oversight?</td><td>Staffing plan and training schedule</td></tr>
+                                    <tr><td>Vendor/tool readiness</td><td>Is the tool validated, documented, explainable, and subject to state audit? Has a model card been provided?</td><td>Vendor documentation, model card, and contract terms</td></tr>
+                                    <tr><td>Governance</td><td>Is there a governance board, RACI, and decision-rights framework in place?</td><td>Governance charter</td></tr>
+                                    <tr><td>Privacy/security</td><td>Are PHI/PII protections, data sharing agreements, and security controls documented?</td><td>Security assessment, DSA, and training data policy</td></tr>
+                                    <tr><td>Access safeguards</td><td>Is the state prepared to assess rural/access impact before adverse action?</td><td>Access impact review template</td></tr>
+                                    <tr><td>AI literacy</td><td>Are procurement staff and end users trained to evaluate and interpret AI systems?</td><td>Training plan and completion records</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div id="tmpl-vendor" class="tab-content">
+                    <div class="card">
+                        <h3>9.2 Vendor and Product Questions</h3>
+                        <p style="margin-bottom:0.75rem;">Use these questions during procurement, product evaluation, and ongoing vendor oversight:</p>
+                        <ul class="checklist" data-group="vendor">
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>What specific decision or workflow does the product support, and what decisions does it not make?</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>What data sources, fields, and refresh cycles are required? Which data leave the state environment?</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Can the vendor provide a model card covering: intended use, performance metrics, training data, quantitative analysis, ethical considerations, and known limitations?</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Does the vendor use third-party AI models (e.g., foundation models from AWS, OpenAI, Anthropic)? If so, provide an implementation fact sheet.</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>What is the vendor's policy on using state data, provider data, or prompt data for training their models? Can the state opt out?</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>How are outputs explained to investigators, enrollment staff, legal/hearings staff, providers, and non-technical executives?</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>How does the product detect or mitigate bias, proxy variables, model drift, data quality problems, and hallucinated or unsupported summaries?</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Can the state access audit logs showing input data, model version, run date, output, reviewer actions, overrides, and dispositions?</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>How will the vendor support contested cases, audits, public-records requests, legislative inquiries, and independent validation?</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>What PHI/PII protections, security controls, subcontractor disclosures, and data retention/deletion procedures apply?</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>What happens if the state terminates the contract? How are data, models, configurations, and documentation returned or destroyed?</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>What are the total cost components: licensing, compute/inference, data storage, integration, support, and annual cost trajectory?</span></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div id="tmpl-modelcard" class="tab-content">
+                    <div class="card">
+                        <h3>9.3 Model Card Evaluation Rubric</h3>
+                        <p style="margin-bottom:0.75rem;">A model card is a standardized disclosure form for an AI tool, similar to a nutrition label. States should require this documentation from vendors as the standard rubric for evaluating any AI solution proposed for provider risk monitoring.</p>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead><tr><th>Model Card Field</th><th>What to Look For</th><th>State to Complete</th></tr></thead>
+                                <tbody>
+                                    <tr><td><strong>Intended use</strong></td><td>Clear statement of what the model does and what it should NOT be used for</td><td><em>Example: Provider revalidation risk tiering &#x2014; NOT enrollment denial</em></td></tr>
+                                    <tr><td><strong>Performance metrics</strong></td><td>Precision, recall, F1, false positive rate, measured on relevant population</td><td>[Vendor-provided metrics + state validation results]</td></tr>
+                                    <tr><td><strong>Training data</strong></td><td>Source, size, date range, representativeness, de-identification</td><td>[Verify: was state data used? Under what agreement?]</td></tr>
+                                    <tr><td><strong>Quantitative analysis</strong></td><td>Performance across subgroups (geography, provider type, size, rurality)</td><td>[State-specific equity analysis results]</td></tr>
+                                    <tr><td><strong>Ethical considerations</strong></td><td>Known risks, potential harms, populations affected, mitigation strategies</td><td>[State risk assessment and acceptance decision]</td></tr>
+                                    <tr><td><strong>Limitations &amp; caveats</strong></td><td>Known failure modes, data gaps, populations where model performs poorly</td><td>[Document for reviewer awareness]</td></tr>
+                                    <tr><td><strong>Model type / approach</strong></td><td>Supervised vs. unsupervised, rules-based vs. ML, LLM components</td><td>[Document rationale for approach selection]</td></tr>
+                                    <tr><td><strong>Key features / signals</strong></td><td>Top contributing factors. Transparent feature importance.</td><td>[Verify no prohibited proxy variables]</td></tr>
+                                    <tr><td><strong>Human review requirement</strong></td><td>Who reviews, what authority, what override options exist</td><td>[Map to state RACI and workflow]</td></tr>
+                                    <tr><td><strong>Monitoring plan</strong></td><td>Drift detection, performance review cadence, recalibration triggers</td><td>[Align with state governance cadence]</td></tr>
+                                    <tr><td><strong>Stop conditions</strong></td><td>When to pause or retire the model</td><td>[Define state-specific thresholds for retirement]</td></tr>
+                                    <tr><td><strong>Cost structure</strong></td><td>Licensing, compute/inference, scaling costs, total cost of ownership</td><td>[Budget alignment and ROI assessment]</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div id="tmpl-implsheet" class="tab-content">
+                    <div class="card">
+                        <h3>9.4 Implementation Fact Sheet</h3>
+                        <p style="margin-bottom:0.75rem;">When a vendor adapts or extends a foundation model, the base model's model card alone is insufficient. The vendor should provide an implementation fact sheet documenting how they customized the solution.</p>
+                        <div class="table-wrapper">
+                            <table>
+                                <thead><tr><th>Field</th><th>Purpose</th><th>Example</th></tr></thead>
+                                <tbody>
+                                    <tr><td><strong>Base model(s) used</strong></td><td>Identify the foundation model and version</td><td><em>Claude 3.5 Sonnet via AWS Bedrock</em></td></tr>
+                                    <tr><td><strong>Customization method</strong></td><td>Fine-tuning, RAG, prompt engineering, rules layer, or combination</td><td><em>RAG with state-specific knowledge base + rules-based post-processing</em></td></tr>
+                                    <tr><td><strong>State-specific data applied</strong></td><td>What state data was used to configure or test the system</td><td><em>12 months of closed-case outcomes for validation; no state data used for model training</em></td></tr>
+                                    <tr><td><strong>Additional testing performed</strong></td><td>What validation was done beyond the base model benchmarks</td><td><em>Tested against 200 known fraud cases and 200 known legitimate providers</em></td></tr>
+                                    <tr><td><strong>Performance delta</strong></td><td>How implementation performance differs from base model benchmarks</td><td><em>Domain-specific precision: 78% (vs. base model general benchmark of 85%)</em></td></tr>
+                                    <tr><td><strong>Data flow and residency</strong></td><td>Where data travels during inference, what is stored, what leaves state environment</td><td><em>All inference within AWS GovCloud; no data leaves region</em></td></tr>
+                                    <tr><td><strong>Liability chain</strong></td><td>Who is liable for outputs</td><td><em>Primary vendor assumes full liability per contract. AWS BAA covers infrastructure.</em></td></tr>
+                                    <tr><td><strong>Update/version management</strong></td><td>How base model updates are managed and validated</td><td><em>Base model updates require vendor re-validation + state approval before production</em></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tmpl-evidence" class="tab-content">
+                    <div class="card">
+                        <h3>9.5 ALJ-Ready Evidence Packet Checklist</h3>
+                        <p style="margin-bottom:0.75rem;">Ensure each evidence packet can withstand review by an administrative law judge:</p>
+                        <ul class="checklist" data-group="alj">
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Plain-language case summary and action requested</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Statutory/regulatory/policy authority for action</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Provider identity, ownership, enrollment, taxonomy, and location history</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Claims or records at issue, with source references and dates</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Explanation of how the lead was generated, including AI/analytics role and limitations</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Model version, data refresh date, threshold, and top contributing factors</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Human reviewer analysis and independent rationale (separate from AI output)</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Provider communications, notices, responses, and opportunities to cure or contest</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Access and rural impact review, where relevant</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Disposition recommendation and supervisor/legal approval</span></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div id="tmpl-rural" class="tab-content">
+                    <div class="card">
+                        <h3>9.6 Rural Access Impact Review Checklist</h3>
+                        <p style="margin-bottom:0.75rem;">Complete before any high-consequence action against a provider in a potentially access-sensitive area:</p>
+                        <ul class="checklist" data-group="rural">
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Is the provider the only or one of few providers for the service in a county, region, tribal area, frontier area, or rural community?</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>What is the current member travel time/distance, and how would it change if the provider is limited, suspended, or terminated?</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Are alternative providers accepting Medicaid members and available within clinically appropriate timeframes?</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Would provider education, a corrective action plan, or staged intervention protect integrity while maintaining access?</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Is there evidence of patient harm or exploitation that requires immediate action despite access concerns?</span></li>
+                            <li onclick="toggleCheck(this)"><input type="checkbox"><span>Has the state documented an access mitigation plan before high-consequence action?</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- CASE STUDIES SECTION (NEW in v0.3) -->
+        <div id="casestudies" class="section">
+            <h2 style="margin-bottom:1rem; color:var(--primary);">10. Peer Case Studies<span class="new-badge">NEW</span></h2>
+            <p style="margin-bottom:1.5rem;">Peer state examples were the #1 requested resource in the SAMA survey (5 of 7 respondents). The following anonymized vignettes illustrate real implementation patterns &#x2014; one success, one near-miss that produced important lessons.</p>
+
+            <div class="card" style="border-left: 4px solid var(--success);">
+                <h3 style="color: var(--success);">Vignette A: Document Triage Pilot &#x2014; Success</h3>
+                <p><strong>State profile:</strong> Mid-size state, ~2M Medicaid enrollees, existing MMIS with limited analytics capability.</p>
+                <p style="margin-top:0.5rem;"><strong>Problem:</strong> Program integrity staff were reviewing an average of 180 pages of clinical documentation per case, spending 3&#x2013;4 hours per provider on initial triage. Backlog was growing by ~20 cases/month.</p>
+                <p style="margin-top:0.5rem;"><strong>What they did:</strong> Piloted an LLM-based document summarization tool (Use Case 3) on a subset of post-payment review cases. Limited scope to behavioral health claims where documentation volume was highest. Required human auditor to validate every AI-generated summary against source documents for the first 60 days.</p>
+                <p style="margin-top:0.5rem;"><strong>Results after 6 months:</strong></p>
+                <ul style="margin:0.25rem 0 0 1.5rem;">
+                    <li>Initial triage time reduced from 3.5 hours to ~45 minutes per case</li>
+                    <li>Backlog eliminated within 4 months</li>
+                    <li>Auditor override rate: 12% (AI summary missed relevant context); this dropped to 6% after prompt refinement</li>
+                    <li>No cases where AI-only summary would have led to incorrect adverse action (human review caught all gaps)</li>
+                    <li>Total pilot cost: ~$85K (vendor licensing + staff time for validation)</li>
+                </ul>
+                <p style="margin-top:0.5rem;"><strong>Key lesson:</strong> Starting with a narrow, well-defined use case where the AI assists rather than decides made governance straightforward. The 60-day parallel validation period built staff trust and identified prompt improvements before scaling.</p>
+            </div>
+
+            <div class="card" style="border-left: 4px solid var(--warning); margin-top:1.25rem;">
+                <h3 style="color: var(--warning);">Vignette B: Risk Scoring Without Access Review &#x2014; Near-Miss</h3>
+                <p><strong>State profile:</strong> Large state, federated Medicaid structure, vendor-built risk scoring tool deployed in production.</p>
+                <p style="margin-top:0.5rem;"><strong>Problem:</strong> The state deployed a provider risk scoring tool that identified statistical outliers for enhanced review. The tool performed well on accuracy metrics in urban areas.</p>
+                <p style="margin-top:0.5rem;"><strong>What went wrong:</strong> In a rural county, the tool flagged the only pediatric behavioral health provider within 90 miles. The provider's billing was an outlier because they were the sole provider &#x2014; all members in the county used them, creating volume patterns that looked anomalous compared to urban peers. The case was routed to prepayment review hold.</p>
+                <p style="margin-top:0.5rem;"><strong>Impact (caught before harm):</strong> A provider relations staff member noticed the hold during a routine check and escalated. The hold was released within 5 days, but the provider had already begun turning away new patients due to cash flow concerns. Members reported delayed appointments.</p>
+                <p style="margin-top:0.5rem;"><strong>What they changed:</strong></p>
+                <ul style="margin:0.25rem 0 0 1.5rem;">
+                    <li>Added mandatory Rural Access Impact Overlay (Use Case 6) as a pre-action check</li>
+                    <li>Recalibrated peer groups to account for sole-community provider status</li>
+                    <li>Added "access flag" to dashboard so triage staff see geographic context immediately</li>
+                    <li>Established escalation policy: any action against a sole-community provider requires director-level review</li>
+                </ul>
+                <p style="margin-top:0.5rem;"><strong>Key lesson:</strong> A model can be accurate on its own terms and still create harm if the workflow doesn't account for context the model cannot see. Access review is not optional &#x2014; it must be structural.</p>
+            </div>
+
+            <div class="callout info" style="margin-top:1rem;">
+                <strong>Note:</strong> These vignettes are composites drawn from workstream discussions and public enforcement patterns. They do not represent any single state's experience. The workstream welcomes additional case studies from participating states (with state consent) for future versions.
+            </div>
+        </div>
+        <!-- TALKING POINTS SECTION (NEW in v0.3) -->
+        <div id="talkingpoints" class="section">
+            <h2 style="margin-bottom:1rem; color:var(--primary);">11. Talking Points: How to Describe AI-Assisted Risk Monitoring<span class="new-badge">NEW</span></h2>
+            <p style="margin-bottom:1.5rem;">The readiness guide repeatedly notes that states should "assume you'll explain this to a legislator, ALJ, journalist, or provider." Here is starter language for those conversations. Adapt to your state's context, legal framework, and communication norms.</p>
+
+            <div class="card">
+                <h3>For the Legislature / Oversight Committees</h3>
+                <p style="font-style:italic; padding:0.75rem; background:#f7fafc; border-radius:6px; margin-top:0.5rem;">"We are using data analytics &#x2014; including some AI-assisted tools &#x2014; to help our program integrity staff focus on the providers and claims most likely to represent a genuine risk to the program or to patients. These tools do not make decisions. They organize information so that trained human reviewers can make better, faster, more documented decisions. We have governance rules in place, we test for bias, we protect rural access, and we can explain how any case was identified and reviewed. The goal is fewer, better investigations &#x2014; not more flags."</p>
+            </div>
+
+            <div class="card">
+                <h3>For Provider Associations</h3>
+                <p style="font-style:italic; padding:0.75rem; background:#f7fafc; border-radius:6px; margin-top:0.5rem;">"Our risk monitoring program uses analytics to identify unusual patterns &#x2014; things like billing volumes significantly different from peers, or missing documentation. When patterns are flagged, a trained staff member reviews the case before any action is taken. No provider will face adverse action based solely on an algorithm. We include access safeguards so that legitimate providers &#x2014; especially in rural or underserved areas &#x2014; are not burdened by the monitoring process itself. We welcome provider feedback on how the process is experienced."</p>
+            </div>
+
+            <div class="card">
+                <h3>For the Press / Public Inquiries</h3>
+                <p style="font-style:italic; padding:0.75rem; background:#f7fafc; border-radius:6px; margin-top:0.5rem;">"[State Agency] uses data analytics as one tool among many to protect Medicaid funds and the members who depend on them. Our approach is human-centered: technology helps us organize and prioritize information, but trained staff make all decisions about whether to take action. We have published governance principles, we test our tools for fairness, and providers have full due-process rights including notice and the ability to contest any finding. We monitor access to care so that our integrity work does not create barriers for members, particularly in rural communities."</p>
+            </div>
+
+            <div class="callout info" style="margin-top:1rem;">
+                <strong>Tips for all audiences:</strong> Lead with the human decision-maker. Name the safeguards. Acknowledge limitations. Offer specifics when asked. Avoid jargon (say "data analytics" rather than "machine learning" or "AI" unless the audience is technical). Never overstate what the tool does.
+            </div>
+        </div>
+        <!-- GLOSSARY SECTION (NEW in v0.3) -->
+        <div id="glossary" class="section">
+            <h2 style="margin-bottom:1rem; color:var(--primary);">12. Glossary<span class="new-badge">NEW</span></h2>
+            <p style="margin-bottom:1.5rem;">Technical terms used in this guide, defined in plain language for non-technical readers.</p>
+
+            <div class="card">
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th style="width:25%;">Term</th><th>Plain-Language Definition</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>Clustering</strong></td><td>A method of grouping similar things together based on their characteristics. In this context: grouping providers with similar billing patterns so outliers become visible.</td></tr>
+                            <tr><td><strong>Disparate impact</strong></td><td>When a policy or tool affects one group disproportionately compared to others, even if that was not the intent. Example: a risk model that flags rural providers at higher rates than urban providers because of volume differences, not actual fraud.</td></tr>
+                            <tr><td><strong>Drift (model drift)</strong></td><td>When an AI model's performance degrades over time because the real world has changed since the model was built. Like a weather forecast model trained on summer data trying to predict winter storms.</td></tr>
+                            <tr><td><strong>Entity resolution</strong></td><td>The process of determining whether two records refer to the same real-world entity (person, organization) when they appear differently in different data sources. Example: matching "Dr. J. Smith, NPI 123" in one state with "John Smith MD, NPI 123" in another.</td></tr>
+                            <tr><td><strong>F1 score</strong></td><td>A single number that balances two concerns: how often the tool is right when it flags something (precision) and how often it catches things it should flag (recall). Higher is better; 1.0 would be perfect.</td></tr>
+                            <tr><td><strong>Foundation model</strong></td><td>A large pre-trained AI model (like GPT or Claude) that can be adapted for specific tasks. Think of it as a general-purpose engine that vendors customize for Medicaid-specific work.</td></tr>
+                            <tr><td><strong>Hallucination</strong></td><td>When an AI generates information that sounds plausible but is not supported by the source data. In document summarization: stating a clinical note contains something it does not actually say.</td></tr>
+                            <tr><td><strong>MLOps / ModelOps</strong></td><td>The practices and tools for managing AI models in production &#x2014; version control, monitoring, updating, and retiring models. Similar to how IT manages software releases.</td></tr>
+                            <tr><td><strong>Model card</strong></td><td>A standardized disclosure form for an AI tool, similar to a nutrition label. Documents what the model does, how it performs, what data it was trained on, known limitations, and who should review its outputs.</td></tr>
+                            <tr><td><strong>NLP (Natural Language Processing)</strong></td><td>Technology that enables computers to read and interpret human language &#x2014; clinical notes, narrative reports, provider communications.</td></tr>
+                            <tr><td><strong>LLM (Large Language Model)</strong></td><td>A type of AI trained on large amounts of text that can summarize, generate, and analyze written content. GPT, Claude, and similar systems are LLMs.</td></tr>
+                            <tr><td><strong>Precision</strong></td><td>Of all the things the tool flagged, how many were actually problems? High precision means fewer false alarms.</td></tr>
+                            <tr><td><strong>Proxy variable</strong></td><td>A data point that stands in for something else. Example: ZIP code as a proxy for race or income. Models can learn proxy discrimination without explicitly using protected characteristics.</td></tr>
+                            <tr><td><strong>RAG (Retrieval-Augmented Generation)</strong></td><td>A technique where an AI looks up relevant documents before generating a response, rather than relying only on its training. Helps ground outputs in actual source material and reduces hallucination.</td></tr>
+                            <tr><td><strong>Recall</strong></td><td>Of all the actual problems that exist, how many did the tool catch? High recall means fewer missed cases.</td></tr>
+                            <tr><td><strong>Unsupervised learning</strong></td><td>AI that finds patterns in data without being told what "right" and "wrong" look like in advance. Useful when historical labels may carry bias (e.g., past investigation patterns may reflect enforcement priorities rather than actual fraud distribution).</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <!-- SURVEY RESULTS SECTION -->
+        <div id="survey" class="section">
+            <h2 style="margin-bottom:1rem; color:var(--primary);">13. Survey Results Summary</h2>
+            <p style="margin-bottom:1rem;">Summary of survey responses received from participating states and stakeholders (SAMA 2026 Survey, collected July 2026). This data provides context for the recommendations in this guide.</p>
+
+            <div class="callout warning" style="margin-bottom:1.5rem;">
+                <strong>Attribution note:</strong> State-level findings in this section are shared with respondent awareness. Some respondents have requested anonymization in external presentations. Before circulating this guide beyond the SAMA workstream, confirm with each respondent that state-level attribution is appropriate for the intended audience. Where consent is not confirmed, aggregate findings without state names.
+            </div>
+
+            <div class="card">
+                <h3>Survey Overview</h3>
+                <div class="summary-grid">
+                    <div class="summary-card">
+                        <div class="number">7</div>
+                        <h4>Respondents</h4>
+                        <p style="font-size:0.8rem;color:var(--text-light);">State agencies + consulting</p>
+                    </div>
+                    <div class="summary-card">
+                        <div class="number">6</div>
+                        <h4>States Represented</h4>
+                        <p style="font-size:0.8rem;color:var(--text-light);">Across Southeast, Midwest, Mountain West, and Southwest</p>
+                    </div>
+                    <div class="summary-card">
+                        <div class="number">4</div>
+                        <h4>Implementation Stages</h4>
+                        <p style="font-size:0.8rem;color:var(--text-light);">From not exploring to production</p>
+                    </div>
+                </div>
+                <div class="callout info" style="margin-top:1rem;">
+                    <strong>Note:</strong> Survey response volume was limited (7 respondents). These findings represent directional input from participating states rather than a comprehensive national assessment.
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Respondent Profile</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>State</th><th>Agency / Division</th><th>Role</th><th>AI Involvement</th><th>Implementation Stage</th></tr></thead>
+                        <tbody>
+                            <tr><td>Florida</td><td>Agency for Healthcare Administration / Medicaid Program Integrity</td><td>Administrator</td><td>Key contributor or advisor</td><td>Early exploration</td></tr>
+                            <tr><td>Louisiana</td><td>Department of Health / Medicaid Program Integrity</td><td>Asst. Section Chief - SURS, Data Mining &amp; Analytics</td><td>Developing governance &amp; policy</td><td>Developing governance/procurement</td></tr>
+                            <tr><td>Alabama</td><td>Alabama Medicaid Agency</td><td>Deputy Commissioner &amp; CIO</td><td>Leads or co-leads decisions</td><td>Implemented in production</td></tr>
+                            <tr><td>Nebraska</td><td>Medicaid &amp; Long-Term Care</td><td>Program Integrity Administrator</td><td>Outside primary role</td><td>Not currently exploring</td></tr>
+                            <tr><td>Colorado</td><td>Dept. of Health Care Policy and Financing</td><td>Deputy CFO</td><td>AI governance &amp; procurement leadership</td><td>Procuring or evaluating</td></tr>
+                            <tr><td>Colorado</td><td>Dept. of Health Care Policy and Financing</td><td>Health Information Office Director</td><td>IT/data/technology</td><td>Procuring or evaluating</td></tr>
+                            <tr><td>Texas</td><td>Health and Human Services OIG</td><td>Chief</td><td>Key contributor</td><td>Early exploration</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Implementation Maturity Spectrum</h3>
+                <p style="margin-bottom:0.75rem;">Respondents span the full range of AI readiness:</p>
+                <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin:1rem 0;">
+                    <div style="flex:1; min-width:150px; padding:0.75rem; border-radius:8px; background:#fed7d7; text-align:center;">
+                        <strong style="font-size:1.5rem;">1</strong><br><span style="font-size:0.8rem;">Not Exploring</span>
+                    </div>
+                    <div style="flex:1; min-width:150px; padding:0.75rem; border-radius:8px; background:#fefcbf; text-align:center;">
+                        <strong style="font-size:1.5rem;">2</strong><br><span style="font-size:0.8rem;">Early Exploration</span>
+                    </div>
+                    <div style="flex:1; min-width:150px; padding:0.75rem; border-radius:8px; background:#c6f6d5; text-align:center;">
+                        <strong style="font-size:1.5rem;">3</strong><br><span style="font-size:0.8rem;">Developing Governance / Procuring</span>
+                    </div>
+                    <div style="flex:1; min-width:150px; padding:0.75rem; border-radius:8px; background:#bee3f8; text-align:center;">
+                        <strong style="font-size:1.5rem;">1</strong><br><span style="font-size:0.8rem;">In Production</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Top Provider Risk Areas of Interest</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Risk Area</th><th>Ranked #1</th><th>In Top 3</th><th>Selected at All</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>Fraud, waste, and abuse detection</strong></td><td>5 of 7</td><td>7 of 7</td><td>7 of 7</td></tr>
+                            <tr><td><strong>Lead generation and risk stratification</strong></td><td>1 of 7</td><td>5 of 7</td><td>7 of 7</td></tr>
+                            <tr><td><strong>Claims and billing practice review</strong></td><td>0</td><td>4 of 7</td><td>7 of 7</td></tr>
+                            <tr><td>Provider credentialing and enrollment</td><td>1 of 7</td><td>3 of 7</td><td>7 of 7</td></tr>
+                            <tr><td>Identity verification</td><td>1 of 7</td><td>3 of 7</td><td>7 of 7</td></tr>
+                            <tr><td>Network adequacy and access-to-care monitoring</td><td>0</td><td>2 of 7</td><td>7 of 7</td></tr>
+                            <tr><td>Prior authorization review</td><td>0</td><td>1 of 7</td><td>7 of 7</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout success" style="margin-top:0.75rem;">
+                    <strong>Key Finding:</strong> Fraud/waste/abuse detection and lead generation/risk stratification are the dominant priorities across all respondents regardless of implementation stage.
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Greatest Barriers to Safe AI Implementation</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Barrier</th><th>Ranked in Top 3</th><th>Key Insight</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>Legal, appeals, audit, or evidentiary concerns</strong></td><td>4 of 7</td><td>Defensibility in hearings is a primary concern</td></tr>
+                            <tr><td><strong>Data access, quality, or interoperability</strong></td><td>4 of 7</td><td>Even production-ready states cite data issues as ongoing</td></tr>
+                            <tr><td><strong>Lack of internal AI/analytics expertise</strong></td><td>3 of 7</td><td>States acknowledge a skills gap in evaluating AI tools</td></tr>
+                            <tr><td><strong>Funding or federal/state approval uncertainty</strong></td><td>3 of 7</td><td>Unclear federal expectations create hesitation to invest</td></tr>
+                            <tr><td>Vendor transparency or limited explainability</td><td>2 of 7</td><td>Vendor "black box" concerns affect trust</td></tr>
+                            <tr><td>Lack of AI governance or approval process</td><td>2 of 7</td><td>States without governance feel unprepared</td></tr>
+                            <tr><td>Procurement or contracting limitations</td><td>2 of 7</td><td>Traditional procurement may not accommodate AI</td></tr>
+                            <tr><td>State IT infrastructure or security requirements</td><td>2 of 7</td><td>Legacy infrastructure limits deployment options</td></tr>
+                            <tr><td>Bias, equity, provider burden, or access concerns</td><td>1 of 7</td><td>Acknowledged but not yet the top blocker</td></tr>
+                            <tr><td>Difficulty moving from pilot to operational use</td><td>0</td><td>Not yet a barrier &#x2014; most haven't reached pilot</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Most Valuable Resources Requested</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead><tr><th>Resource Type</th><th>Ranked in Top 3</th></tr></thead>
+                        <tbody>
+                            <tr><td><strong>Case studies and examples from peer state Medicaid agencies</strong></td><td>5 of 7</td></tr>
+                            <tr><td><strong>Legal guidance specific to public sector</strong></td><td>4 of 7</td></tr>
+                            <tr><td><strong>Vendor disclosure framework</strong></td><td>4 of 7</td></tr>
+                            <tr><td>Ongoing monitoring guide</td><td>3 of 7</td></tr>
+                            <tr><td>Frameworks for evaluating bias prevention and drift detection</td><td>3 of 7</td></tr>
+                            <tr><td>Risk classification or scoring matrix for AI use cases</td><td>3 of 7</td></tr>
+                            <tr><td>Model contract language and AI-specific procurement requirements</td><td>3 of 7</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout info" style="margin-top:0.75rem;">
+                    <strong>How this guide responds:</strong> Peer case studies are now included (&#xa7;10). Vendor disclosure is addressed through the model card rubric (&#xa7;9.3) and vendor questions (&#xa7;9.2). Funding pathways (&#xa7;8.4) address the federal approval uncertainty barrier. Legal guidance remains a gap for future workstream attention.
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>State-Specific Highlights</h3>
+                <ul style="margin:0.5rem 0 0 1.5rem; line-height:2;">
+                    <li><strong>Alabama:</strong> Most mature respondent &#x2014; already in production. Prioritizes vendor transparency and bias concerns. Interested in peer case studies and model contract language.</li>
+                    <li><strong>Colorado:</strong> Actively procuring. Has a member chatbot in operation. Looking for peer APD submissions as reference. Planning to hire a vendor to train staff on developing use cases.</li>
+                    <li><strong>Texas:</strong> Navigating multiple AI system types simultaneously. Prioritizes "proven accuracy, reliability, and traceability" with "clean data with solid lineage" as foundational.</li>
+                    <li><strong>Louisiana:</strong> Developing governance and procurement requirements. Strong focus on legal/evidentiary concerns. Wants AI purchased and hosted within state infrastructure.</li>
+                    <li><strong>Nebraska:</strong> Not currently exploring AI. Prioritizes identity verification and legal guidance. Represents states that need foundational resources before considering implementation.</li>
+                </ul>
+            </div>
+        </div>
+        <!-- CHANGELOG SECTION (NEW in v0.3) -->
+        <div id="changelog" class="section">
+            <h2 style="margin-bottom:1rem; color:var(--primary);">Changelog</h2>
+
+            <div class="card">
+                <h3>v0.3 &#x2014; August 2026</h3>
+                <p style="margin-bottom:0.75rem;">Incorporates workstream lead review feedback. Renamed from "Playbook" to "Readiness Guide" to better reflect audience and purpose.</p>
+                <ul style="margin:0.5rem 0 0 1.5rem; line-height:1.8;">
+                    <li><strong>Added "Start Here" navigation page</strong> &#x2014; maturity-based entry paths so readers find relevant content immediately</li>
+                    <li><strong>Technology tier badges on use cases</strong> &#x2014; Conventional Analytics / Machine Learning / Generative AI classification to help states scope governance proportionately</li>
+                    <li><strong>Use case prioritization table</strong> &#x2014; Effort, data readiness, and time-to-value ratings per use case</li>
+                    <li><strong>Governance rule prioritization</strong> &#x2014; 4 rules marked "Required before first pilot," 8 marked "Build over first year"</li>
+                    <li><strong>Funding Pathways subsection (&#xa7;8.4)</strong> &#x2014; APD guidance, federal match rates, and common funding vehicles</li>
+                    <li><strong>Budget worksheet ranges</strong> &#x2014; Rough order-of-magnitude estimates added to the blank budget worksheet</li>
+                    <li><strong>Talking points (&#xa7;11)</strong> &#x2014; Ready-to-use language for explaining AI risk monitoring to legislators, provider associations, and the press</li>
+                    <li><strong>Peer case study vignettes (&#xa7;10)</strong> &#x2014; One success, one near-miss (anonymized composites)</li>
+                    <li><strong>Directional benchmarks for metrics (&#xa7;7.3)</strong> &#x2014; "What number is good?" guidance for performance metrics</li>
+                    <li><strong>Glossary (&#xa7;12)</strong> &#x2014; Plain-language definitions for all technical terms used in the guide</li>
+                    <li><strong>Provider disclosure discussion (&#xa7;5.2)</strong> &#x2014; Should states tell providers AI is used in monitoring?</li>
+                    <li><strong>"What good looks like" moments</strong> &#x2014; Brief value vignettes added to Executive Summary, Use Cases, and Workflow sections</li>
+                    <li><strong>Model card plain-language anchor</strong> &#x2014; Defined as "a standardized disclosure form for an AI tool, similar to a nutrition label" on first use</li>
+                    <li><strong>Survey attribution disclaimer</strong> &#x2014; Added note about respondent consent for state-level attribution</li>
+                    <li><strong>Moved "What's New" to Changelog</strong> &#x2014; Version history is now in this appendix rather than the executive summary</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3>v0.2 &#x2014; July 2026</h3>
+                <ul style="margin:0.5rem 0 0 1.5rem; line-height:1.8;">
+                    <li>Added concrete use case examples with data inputs/outputs</li>
+                    <li>Added risk framework mapping conventional risks to AI-specific mitigations</li>
+                    <li>Added vendor data training guardrails (Governance Rule 11)</li>
+                    <li>Added model cards as a standard evaluation rubric (Governance Rule 12)</li>
+                    <li>Added cross-state visibility use case</li>
+                    <li>Added CMS public data set references</li>
+                    <li>Added training and education guidance</li>
+                    <li>Added survey results summary tab</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h3>v0.1 &#x2014; June 2026</h3>
+                <ul style="margin:0.5rem 0 0 1.5rem; line-height:1.8;">
+                    <li>Initial draft: problem statement, 4-phase model, workflow, governance rules, data sources, staffing, and templates</li>
+                </ul>
+            </div>
+        </div>
+    </div><!-- end container -->
+    </div><!-- end main-layout -->
+
+    <footer style="background:var(--primary); color:white; text-align:center; padding:1.5rem; margin-top:2rem;">
+        <p style="opacity:0.9; font-size:0.85rem;">SAMA Continuous Provider Risk Monitoring Readiness Guide | Draft v0.3 | Updated August 2026</p>
+        <p style="opacity:0.7; font-size:0.75rem; margin-top:0.3rem;">Working draft for discussion purposes only. Does not represent the views or endorsement of SAMA, MESC, any participating state, or any individual organization.</p>
+    </footer>
+
+    <!-- Feedback Panel -->
+    <button class="feedback-toggle" onclick="toggleFeedbackPanel()">&#9998; Give Feedback</button>
+    <div class="feedback-overlay" onclick="toggleFeedbackPanel()"></div>
+    <div class="feedback-panel" id="feedbackPanel">
+        <div class="feedback-panel-header">
+            <h3>Section Feedback</h3>
+            <button class="feedback-panel-close" onclick="toggleFeedbackPanel()">&times;</button>
+        </div>
+        <div class="feedback-panel-body">
+            <p style="font-size:0.8rem; color:var(--text-light); margin-bottom:1rem;">Add comments for any section. When done, export as a text file or copy to clipboard to share via email.</p>
+            <label style="font-size:0.85rem; font-weight:600; margin-bottom:0.3rem; display:block;">Your Name</label>
+            <input type="text" class="feedback-name" id="feedbackName" placeholder="e.g., Jim Griffith">
+            <div class="feedback-section"><label>Start Here / Overview</label><textarea id="fb-overview" placeholder="Comments on the overview..."></textarea></div>
+            <div class="feedback-section"><label>The Problem</label><textarea id="fb-problem" placeholder="Comments on the problem statement..."></textarea></div>
+            <div class="feedback-section"><label>Use Cases</label><textarea id="fb-usecases" placeholder="Comments on use cases..."></textarea></div>
+            <div class="feedback-section"><label>4-Phase Model</label><textarea id="fb-phases" placeholder="Comments on phasing..."></textarea></div>
+            <div class="feedback-section"><label>Workflow</label><textarea id="fb-workflow" placeholder="Comments on workflow..."></textarea></div>
+            <div class="feedback-section"><label>Governance</label><textarea id="fb-governance" placeholder="Comments on governance..."></textarea></div>
+            <div class="feedback-section"><label>Risk Framework</label><textarea id="fb-risks" placeholder="Comments on risk framework..."></textarea></div>
+            <div class="feedback-section"><label>Data &amp; Alerts</label><textarea id="fb-data" placeholder="Comments on data..."></textarea></div>
+            <div class="feedback-section"><label>Staffing, Training &amp; Budget</label><textarea id="fb-staffing" placeholder="Comments on staffing/budget..."></textarea></div>
+            <div class="feedback-section"><label>Templates</label><textarea id="fb-templates" placeholder="Comments on templates..."></textarea></div>
+            <div class="feedback-section"><label>Case Studies &amp; Talking Points</label><textarea id="fb-cases" placeholder="Comments on case studies or talking points..."></textarea></div>
+            <div class="feedback-section"><label>Survey Results</label><textarea id="fb-survey" placeholder="Comments on survey..."></textarea></div>
+            <div class="feedback-section"><label>General / Other</label><textarea id="fb-general" placeholder="Any other feedback..."></textarea></div>
+        </div>
+        <div class="feedback-actions">
+            <button class="feedback-btn primary" onclick="downloadFeedback()">&#11015; Download as File</button>
+            <button class="feedback-btn secondary" onclick="copyFeedback()">&#128203; Copy to Clipboard</button>
+            <button class="feedback-btn secondary" onclick="clearFeedback()">&#10060; Clear All</button>
+        </div>
+    </div>
+    <div class="feedback-toast" id="feedbackToast"></div>
+
+    <script>
+        // Navigation helper
+        function navigateTo(sectionId) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-bar > ul > li > a').forEach(a => a.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+            const navLink = document.querySelector(`.nav-bar > ul > li > a[data-section="${sectionId}"]`);
+            if (navLink) {
+                navLink.classList.add('active');
+                const parentLi = navLink.closest('li');
+                if (parentLi && parentLi.classList.contains('has-sub')) {
+                    parentLi.classList.add('expanded');
+                }
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Feedback Panel
+        function toggleFeedbackPanel() {
+            document.getElementById('feedbackPanel').classList.toggle('open');
+            document.querySelector('.feedback-overlay').classList.toggle('show');
+        }
+
+        function gatherFeedback() {
+            const name = document.getElementById('feedbackName').value || 'Anonymous';
+            const date = new Date().toLocaleDateString();
+            const sections = [
+                { id: 'fb-overview', label: 'Start Here / Overview' },
+                { id: 'fb-problem', label: 'The Problem' },
+                { id: 'fb-usecases', label: 'Use Cases' },
+                { id: 'fb-phases', label: '4-Phase Model' },
+                { id: 'fb-workflow', label: 'Workflow' },
+                { id: 'fb-governance', label: 'Governance' },
+                { id: 'fb-risks', label: 'Risk Framework' },
+                { id: 'fb-data', label: 'Data & Alerts' },
+                { id: 'fb-staffing', label: 'Staffing, Training & Budget' },
+                { id: 'fb-templates', label: 'Templates' },
+                { id: 'fb-cases', label: 'Case Studies & Talking Points' },
+                { id: 'fb-survey', label: 'Survey Results' },
+                { id: 'fb-general', label: 'General / Other' }
+            ];
+
+            let output = '=== SAMA Readiness Guide v0.3 — Feedback ===\n';
+            output += 'Reviewer: ' + name + '\n';
+            output += 'Date: ' + date + '\n';
+            output += '=============================================\n\n';
+
+            let hasContent = false;
+            sections.forEach(s => {
+                const el = document.getElementById(s.id);
+                if (el) {
+                    const val = el.value.trim();
+                    if (val) {
+                        hasContent = true;
+                        output += '--- ' + s.label + ' ---\n';
+                        output += val + '\n\n';
+                    }
+                }
+            });
+
+            if (!hasContent) output += '(No feedback entered)\n';
+            return output;
+        }
+
+        function downloadFeedback() {
+            const text = gatherFeedback();
+            const name = document.getElementById('feedbackName').value || 'reviewer';
+            const filename = 'SAMA-ReadinessGuide-Feedback_' + name.replace(/\s+/g, '-') + '_' + new Date().toISOString().split('T')[0] + '.txt';
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Feedback downloaded as ' + filename);
+        }
+
+        function copyFeedback() {
+            const text = gatherFeedback();
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Feedback copied to clipboard!');
+            }).catch(() => {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                showToast('Feedback copied to clipboard!');
+            });
+        }
+
+        function clearFeedback() {
+            if (confirm('Clear all feedback? This cannot be undone.')) {
+                document.querySelectorAll('.feedback-section textarea').forEach(ta => ta.value = '');
+                document.getElementById('feedbackName').value = '';
+                showToast('All feedback cleared.');
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('feedbackToast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // Navigation
+        document.querySelectorAll('.nav-bar a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const sectionId = link.dataset.section;
+                const scrollTarget = link.dataset.scroll;
+                const tabTarget = link.dataset.tab;
+                const parentLi = link.closest('li');
+                const isSubNav = link.closest('.sub-nav');
+
+                // If this is a parent with sub-nav, toggle expand
+                if (parentLi && parentLi.classList.contains('has-sub') && !isSubNav) {
+                    parentLi.classList.toggle('expanded');
+                }
+
+                // Navigate to section
+                if (sectionId) {
+                    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                    document.querySelectorAll('.nav-bar > ul > li > a').forEach(a => a.classList.remove('active'));
+                    document.getElementById(sectionId).classList.add('active');
+
+                    // Highlight the parent nav item
+                    const parentNav = document.querySelector(`.nav-bar > ul > li > a[data-section="${sectionId}"]`);
+                    if (parentNav) parentNav.classList.add('active');
+
+                    // If a tab target is specified, switch to that tab
+                    if (tabTarget) {
+                        const section = document.getElementById(sectionId);
+                        const tabGroup = section.querySelector('.tab-group');
+                        if (tabGroup) {
+                            tabGroup.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                            tabGroup.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+                            const targetTab = document.getElementById(tabTarget);
+                            if (targetTab) {
+                                targetTab.classList.add('active');
+                                // Find and activate the corresponding button
+                                tabGroup.querySelectorAll('.tab-btn').forEach(btn => {
+                                    if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(tabTarget)) {
+                                        btn.classList.add('active');
+                                    }
+                                });
+                            }
+                        }
+                    }
+
+                    // If a scroll target is specified, scroll to it after a short delay
+                    if (scrollTarget) {
+                        setTimeout(() => {
+                            const target = document.getElementById(scrollTarget);
+                            if (target) {
+                                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }
+                        }, 100);
+                    } else {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+                }
+            });
+        });
+
+        // Tab switching
+        function switchTab(event, tabId) {
+            const tabGroup = event.target.closest('.tab-group');
+            tabGroup.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            tabGroup.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // Accordion
+        function toggleAccordion(header) {
+            const body = header.nextElementSibling;
+            header.classList.toggle('open');
+            body.classList.toggle('open');
+        }
+
+        // Checklist with progress
+        function toggleCheck(li) {
+            const checkbox = li.querySelector('input[type="checkbox"]');
+            checkbox.checked = !checkbox.checked;
+            li.classList.toggle('checked', checkbox.checked);
+            updateProgress(li.closest('.checklist'));
+        }
+
+        function updateProgress(checklist) {
+            const group = checklist.dataset.group;
+            const total = checklist.querySelectorAll('li').length;
+            const checked = checklist.querySelectorAll('input:checked').length;
+            const pct = Math.round((checked / total) * 100);
+
+            const progressBar = document.querySelector(`.progress-bar .fill[data-group="${group}"]`);
+            const countEl = document.querySelector(`.check-count[data-group="${group}"]`);
+            if (progressBar) progressBar.style.width = pct + '%';
+            if (countEl) countEl.textContent = checked;
+        }
+
+        // Prevent checkbox default to let li onclick handle it
+        document.querySelectorAll('.checklist input[type="checkbox"]').forEach(cb => {
+            cb.addEventListener('click', (e) => e.stopPropagation());
+            cb.addEventListener('change', (e) => {
+                const li = cb.closest('li');
+                li.classList.toggle('checked', cb.checked);
+                updateProgress(li.closest('.checklist'));
+            });
+        });
+    </script>
+</body>
+</html>
